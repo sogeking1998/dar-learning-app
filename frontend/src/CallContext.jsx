@@ -31,6 +31,7 @@ export function CallProvider({ children }) {
   const roleRef = useRef(null)
   const pendingIce = useRef([])
   const timerRef = useRef(null)
+  const facingRef = useRef('user')
 
   const cleanup = useCallback(() => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
@@ -49,7 +50,7 @@ export function CallProvider({ children }) {
   const newPeer = useCallback(() => {
     const pc = new RTCPeerConnection(ICE)
     pc.onicecandidate = e => { if (e.candidate) send('ice', e.candidate.toJSON()) }
-    pc.ontrack = e => setRemoteStream(e.streams[0])
+    pc.ontrack = e => setRemoteStream(new MediaStream(e.streams[0].getTracks()))
     pc.onconnectionstatechange = () => {
       const st = pc.connectionState
       if (st === 'connected') setCall(c => c ? { ...c, status: 'connected' } : c)
@@ -185,6 +186,47 @@ export function CallProvider({ children }) {
     setCamOff(v => !v)
   }
 
+  const renegotiate = async () => {
+    const pc = pcRef.current; if (!pc) return
+    const offer = await pc.createOffer()
+    await pc.setLocalDescription(offer)
+    send('offer', { type: offer.type, sdp: offer.sdp })
+  }
+
+  // Turn the camera on — works even if the call started as audio-only.
+  const openCamera = async () => {
+    const pc = pcRef.current, ls = localRef.current
+    if (!pc || !ls) return
+    if (ls.getVideoTracks().length) { ls.getVideoTracks().forEach(t => { t.enabled = true }); setCamOff(false); return }
+    let v
+    try { v = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingRef.current } }) }
+    catch { alert('Could not access the camera.'); return }
+    const track = v.getVideoTracks()[0]
+    ls.addTrack(track)
+    setLocalStream(new MediaStream(ls.getTracks()))
+    const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video')
+    if (sender) await sender.replaceTrack(track)
+    else { pc.addTrack(track, ls); await renegotiate() }
+    setCamOff(false)
+  }
+
+  // Switch between front and back camera (mobile).
+  const flipCamera = async () => {
+    const pc = pcRef.current, ls = localRef.current
+    if (!pc || !ls || !ls.getVideoTracks().length) return
+    facingRef.current = facingRef.current === 'user' ? 'environment' : 'user'
+    let v
+    try { v = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingRef.current } }) }
+    catch { return }
+    const track = v.getVideoTracks()[0]
+    const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video')
+    if (sender) await sender.replaceTrack(track)
+    const old = ls.getVideoTracks()[0]
+    if (old) { ls.removeTrack(old); old.stop() }
+    ls.addTrack(track)
+    setLocalStream(new MediaStream(ls.getTracks()))
+  }
+
   // Always-on inbox: listen for incoming calls while logged in.
   useEffect(() => {
     if (!me) return
@@ -195,7 +237,7 @@ export function CallProvider({ children }) {
   }, [me, handleRing])
 
   return (
-    <CallContext.Provider value={{ call, localStream, remoteStream, muted, camOff, start, answer, decline, hangup, toggleMute, toggleCam }}>
+    <CallContext.Provider value={{ call, localStream, remoteStream, muted, camOff, start, answer, decline, hangup, toggleMute, toggleCam, openCamera, flipCamera }}>
       {children}
       {call && <CallUI />}
     </CallContext.Provider>
