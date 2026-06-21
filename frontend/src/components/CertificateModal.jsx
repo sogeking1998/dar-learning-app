@@ -9,14 +9,28 @@ export default function CertificateModal({ name, course, date, onClose }) {
   const [busy, setBusy] = useState(false)
 
   const download = async () => {
-    const el = document.getElementById('certificate-print')
-    if (!el || busy) return
+    const src = document.getElementById('certificate-print')
+    if (!src || busy) return
     setBusy(true)
+
+    // Capture a fixed-size off-screen clone so the PDF is always crisp (even on
+    // phones) without disturbing the on-screen preview.
+    const FIXED_W = 1200
+    const clone = src.cloneNode(true)
+    clone.removeAttribute('id')
+    clone.style.width = `${FIXED_W}px`
+    clone.style.maxWidth = `${FIXED_W}px`
+    clone.style.position = 'fixed'
+    clone.style.left = '-10000px'
+    clone.style.top = '0'
+    document.body.appendChild(clone)
+
     try {
-      const canvas = await html2canvas(el, {
+      const canvas = await html2canvas(clone, {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
+        windowWidth: FIXED_W,
       })
       const img = canvas.toDataURL('image/png')
 
@@ -29,6 +43,7 @@ export default function CertificateModal({ name, course, date, onClose }) {
       pdf.addImage(img, 'PNG', (pw - w) / 2, (ph - h) / 2, w, h)
       pdf.save(`Certificate-${certNumber(course)}.pdf`)
     } finally {
+      document.body.removeChild(clone)
       setBusy(false)
     }
   }

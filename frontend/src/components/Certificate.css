@@ -9,11 +9,13 @@
   position: relative;
   aspect-ratio: 1.414 / 1;
   background:
-    radial-gradient(120% 120% at 50% 0%, #ffffff 0%, #fbfaf3 70%, #f6f3e6 100%);
-  border: 3px solid #0b5132;
-  outline: 1px solid #c9a227;
-  outline-offset: 6px;
-  box-shadow: inset 0 0 0 6px #fbfaf3, inset 0 0 0 7px rgba(201, 162, 39, 0.5);
+    radial-gradient(135% 135% at 50% 0%, #ffffff 0%, #fdfcf5 55%, #f4efdf 100%);
+  /* Layered green + gold double frame (renders reliably in the PDF capture) */
+  box-shadow:
+    inset 0 0 0 3px #0b5132,
+    inset 0 0 0 11px #fdfcf5,
+    inset 0 0 0 13px #c9a227,
+    inset 0 0 0 14px rgba(201, 162, 39, 0.35);
   overflow: hidden;
 }
 
@@ -33,10 +35,10 @@
   width: 34px; height: 34px;
   border: 2px solid #c9a227;
 }
-.cert-corner.tl { top: 16px; left: 16px; border-right: none; border-bottom: none; }
-.cert-corner.tr { top: 16px; right: 16px; border-left: none; border-bottom: none; }
-.cert-corner.bl { bottom: 16px; left: 16px; border-right: none; border-top: none; }
-.cert-corner.br { bottom: 16px; right: 16px; border-left: none; border-top: none; }
+.cert-corner.tl { top: 22px; left: 22px; border-right: none; border-bottom: none; }
+.cert-corner.tr { top: 22px; right: 22px; border-left: none; border-bottom: none; }
+.cert-corner.bl { bottom: 22px; left: 22px; border-right: none; border-top: none; }
+.cert-corner.br { bottom: 22px; right: 22px; border-left: none; border-top: none; }
 
 .cert-content {
   position: relative;
@@ -88,11 +90,18 @@
   margin: 0;
 }
 .cert-title-rule {
+  position: relative;
   display: block;
-  width: clamp(90px, 22%, 180px);
+  width: clamp(120px, 30%, 230px);
   height: 2px;
-  margin: 10px auto clamp(12px, 2.6%, 22px);
+  margin: 11px auto clamp(12px, 2.6%, 22px);
   background: linear-gradient(90deg, transparent, #c9a227, transparent);
+}
+.cert-title-rule::after {
+  content: '◆';
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  color: #c9a227; font-size: 9px; line-height: 1;
+  background: #fdfcf5; padding: 0 7px;
 }
 
 .cert-present {
@@ -169,13 +178,15 @@
 }
 .cert-badge {
   flex-shrink: 0;
-  width: clamp(42px, 8%, 56px);
-  height: clamp(42px, 8%, 56px);
+  width: clamp(46px, 9%, 62px);
+  height: clamp(46px, 9%, 62px);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(circle at 35% 30%, #e7c65a, #c9a227 70%);
+  background: radial-gradient(circle at 35% 28%, #f3dd86, #c9a227 62%, #a8841a 100%);
   color: #5a4708;
-  box-shadow: 0 2px 8px rgba(201, 162, 39, 0.5);
+  box-shadow: 0 3px 10px rgba(201, 162, 39, 0.55),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.55),
+    inset 0 0 0 4px rgba(201, 162, 39, 0.4);
 }
 
 .cert-issue {
