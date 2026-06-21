@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from './supabaseClient'
 import { useAuth } from './AuthContext'
+import { useMessages } from './MessagesContext'
 import CallUI from './components/CallUI'
 
 const ICE = {
@@ -16,6 +17,7 @@ const CallContext = createContext(null)
 
 export function CallProvider({ children }) {
   const { session } = useAuth()
+  const { sendMessage } = useMessages()
   const me = session?.user?.id
   const myName = session?.user?.user_metadata?.name || session?.user?.email?.split('@')[0] || 'DAR member'
 
@@ -34,8 +36,27 @@ export function CallProvider({ children }) {
   const facingRef = useRef('user')
   const callRef = useRef(null)
   const restartRef = useRef(null)
+  const connectedAtRef = useRef(null)
+  const loggedRef = useRef(false)
 
   useEffect(() => { callRef.current = call }, [call])
+
+  // The caller writes a single call-log message into the conversation.
+  const logCall = () => {
+    if (loggedRef.current || roleRef.current !== 'caller') return
+    const c = callRef.current
+    if (!c || !c.peerId) return
+    loggedRef.current = true
+    let text
+    if (connectedAtRef.current) {
+      const secs = Math.max(1, Math.round((Date.now() - connectedAtRef.current) / 1000))
+      const dur = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`
+      text = `${c.mode === 'video' ? '📹 Video' : '📞 Audio'} call · ${dur}`
+    } else {
+      text = `📞 Missed ${c.mode === 'video' ? 'video ' : ''}call`
+    }
+    if (sendMessage) sendMessage(c.peerId, text)
+  }
 
   const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null } }
 
@@ -51,6 +72,7 @@ export function CallProvider({ children }) {
     if (localRef.current) { localRef.current.getTracks().forEach(t => t.stop()); localRef.current = null }
     if (chRef.current) { supabase.removeChannel(chRef.current); chRef.current = null }
     pendingIce.current = []
+    connectedAtRef.current = null
     setLocalStream(null); setRemoteStream(null); setMuted(false); setCamOff(false)
     setCall(null)
   }, [])
@@ -92,6 +114,7 @@ export function CallProvider({ children }) {
       if (st === 'connected') {
         clearTimer()
         if (restartRef.current) { clearTimeout(restartRef.current); restartRef.current = null }
+        if (!connectedAtRef.current) connectedAtRef.current = Date.now()
         setCall(c => c ? { ...c, status: 'connected' } : c)
       } else if (st === 'disconnected' || st === 'failed') {
         // Don't auto-hang-up — try to recover with an ICE restart (caller drives it).
@@ -156,8 +179,8 @@ export function CallProvider({ children }) {
       if (!pc.remoteDescription) pendingIce.current.push(payload)
       else { try { await pc.addIceCandidate(new RTCIceCandidate(payload)) } catch {} }
     })
-    ch.on('broadcast', { event: 'bye' }, () => cleanup())
-    ch.on('broadcast', { event: 'decline' }, () => { setCall(c => c ? { ...c, status: 'declined' } : c); setTimeout(cleanup, 1500) })
+    ch.on('broadcast', { event: 'bye' }, () => { logCall(); cleanup() })
+    ch.on('broadcast', { event: 'decline' }, () => { logCall(); setCall(c => c ? { ...c, status: 'declined' } : c); setTimeout(cleanup, 1500) })
     ch.subscribe()
     chRef.current = ch
     return ch
@@ -168,6 +191,8 @@ export function CallProvider({ children }) {
     if (!me || call) return
     const room = `${me}__${user.id}__${Date.now()}`
     roleRef.current = 'caller'
+    connectedAtRef.current = null
+    loggedRef.current = false
     try {
       await getMedia(mode)
     } catch {
@@ -193,6 +218,7 @@ export function CallProvider({ children }) {
     timerRef.current = setTimeout(() => {
       if (callRef.current && callRef.current.status === 'calling') {
         send('bye')
+        logCall()
         setCall(c => c ? { ...c, status: 'noanswer' } : c)
         setTimeout(cleanup, 1800)
       }
@@ -225,7 +251,7 @@ export function CallProvider({ children }) {
   }
 
   const decline = () => { send('decline'); cleanup() }
-  const hangup = () => { send('bye'); cleanup() }
+  const hangup = () => { logCall(); send('bye'); cleanup() }
 
   const toggleMute = () => {
     const s = localRef.current; if (!s) return
