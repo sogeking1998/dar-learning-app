@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   LayoutDashboard, FileQuestion, LineChart, LogOut, Megaphone, ClipboardList, Film, FileDown,
   Users, BookOpen, BarChart3, Award, ArrowRight, Sparkles, CheckCircle2, MessageSquare, CalendarDays,
+  Menu, X,
 } from 'lucide-react'
 import { useAuth } from '../AuthContext'
 import { MessagesProvider } from '../MessagesContext'
@@ -66,6 +67,10 @@ function AdminConsole() {
   const [view, setView] = useState('dashboard')
   const [confirmOut, setConfirmOut] = useState(false)
   const [upcoming, setUpcoming] = useState(0)
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  const go = id => { setView(id); setMobileOpen(false) }
+  const activeLabel = (NAV.find(n => n.id === view) || {}).label || 'Admin Console'
 
   // Refresh the upcoming-meeting count on load and whenever the view changes.
   useEffect(() => {
@@ -78,8 +83,8 @@ function AdminConsole() {
   }, [me, view])
 
   return (
-    <div className="admin-app">
-      {/* Sidebar */}
+    <div className={`admin-app${mobileOpen ? ' is-mobile-open' : ''}`}>
+      {/* Sidebar (drawer on mobile) */}
       <aside className="admin-sidebar">
         <div className="admin-side-brand">
           <div className="admin-logo"><DarLogo size={26} /></div>
@@ -87,6 +92,9 @@ function AdminConsole() {
             <span className="admin-side-title">Admin Console</span>
             <span className="admin-side-sub">CapDev Admin</span>
           </div>
+          <button className="admin-drawer-close" onClick={() => setMobileOpen(false)} aria-label="Close menu">
+            <X size={20} />
+          </button>
         </div>
 
         <nav className="admin-nav">
@@ -94,7 +102,7 @@ function AdminConsole() {
             <button
               key={id}
               className={`admin-nav-item${view === id ? ' active' : ''}`}
-              onClick={() => setView(id)}
+              onClick={() => go(id)}
             >
               <Icon size={18} /> <span>{label}</span>
               {id === 'calendar' && upcoming > 0 && <span className="admin-nav-badge">{upcoming}</span>}
@@ -107,17 +115,33 @@ function AdminConsole() {
         </button>
       </aside>
 
-      {/* Content */}
-      <div className="admin-content">
-        {view === 'dashboard' && <Overview onNavigate={setView} />}
-        {view === 'analytics' && <AdminAnalytics />}
-        {view === 'exams' && <AdminExams />}
-        {view === 'tasks' && <AdminTasks />}
-        {view === 'video' && <AdminVideo />}
-        {view === 'materials' && <AdminMaterials />}
-        {view === 'messages' && <Messages />}
-        {view === 'calendar' && <AdminCalendar />}
-        {view === 'announcements' && <AdminAnnouncements />}
+      {/* Scrim behind the mobile drawer */}
+      <div className="admin-scrim" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+
+      {/* Main column */}
+      <div className="admin-main">
+        {/* Mobile top bar with hamburger */}
+        <header className="admin-topbar">
+          <button className="admin-burger" onClick={() => setMobileOpen(true)} aria-label="Open menu">
+            <Menu size={22} />
+          </button>
+          <div className="admin-topbar-brand">
+            <div className="admin-logo sm"><DarLogo size={20} /></div>
+            <span>{activeLabel}</span>
+          </div>
+        </header>
+
+        <div className="admin-content">
+          {view === 'dashboard' && <Overview onNavigate={setView} />}
+          {view === 'analytics' && <AdminAnalytics />}
+          {view === 'exams' && <AdminExams />}
+          {view === 'tasks' && <AdminTasks />}
+          {view === 'video' && <AdminVideo />}
+          {view === 'materials' && <AdminMaterials />}
+          {view === 'messages' && <Messages />}
+          {view === 'calendar' && <AdminCalendar />}
+          {view === 'announcements' && <AdminAnnouncements />}
+        </div>
       </div>
 
       {confirmOut && (

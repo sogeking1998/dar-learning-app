@@ -32,6 +32,11 @@ export function CallProvider({ children }) {
   const pendingIce = useRef([])
   const timerRef = useRef(null)
   const facingRef = useRef('user')
+  const callRef = useRef(null)
+
+  useEffect(() => { callRef.current = call }, [call])
+
+  const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null } }
 
   const cleanup = useCallback(() => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
@@ -53,9 +58,10 @@ export function CallProvider({ children }) {
     pc.ontrack = e => setRemoteStream(new MediaStream(e.streams[0].getTracks()))
     pc.onconnectionstatechange = () => {
       const st = pc.connectionState
-      if (st === 'connected') setCall(c => c ? { ...c, status: 'connected' } : c)
-      if (st === 'failed' || st === 'disconnected' || st === 'closed') {
-        if (st === 'failed') { hangup() }
+      if (st === 'connected') { clearTimer(); setCall(c => c ? { ...c, status: 'connected' } : c) }
+      else if (st === 'disconnected' || st === 'failed') {
+        // Don't auto-hang-up — a brief drop (e.g. when turning video on) can recover.
+        setCall(c => (c && c.status === 'connected') ? { ...c, status: 'reconnecting' } : c)
       }
     }
     pcRef.current = pc
@@ -81,6 +87,7 @@ export function CallProvider({ children }) {
     const ch = supabase.channel(`call:${room}`, { config: { broadcast: { self: false } } })
     ch.on('broadcast', { event: 'accept' }, async () => {
       if (roleRef.current !== 'caller') return
+      clearTimer()
       const pc = pcRef.current
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
@@ -140,11 +147,13 @@ export function CallProvider({ children }) {
       }
     })
 
-    // No answer after 35s → give up.
+    // No answer after 35s → give up (only if still ringing).
     timerRef.current = setTimeout(() => {
-      setCall(c => (c && c.status === 'calling') ? { ...c, status: 'noanswer' } : c)
-      send('bye')
-      setTimeout(cleanup, 1800)
+      if (callRef.current && callRef.current.status === 'calling') {
+        send('bye')
+        setCall(c => c ? { ...c, status: 'noanswer' } : c)
+        setTimeout(cleanup, 1800)
+      }
     }, 35000)
   }
 

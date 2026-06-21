@@ -51,6 +51,7 @@ export default function CallUI() {
 
   const statusText = call.status === 'calling' ? 'Calling…'
     : call.status === 'connecting' ? 'Connecting…'
+    : call.status === 'reconnecting' ? 'Reconnecting…'
     : call.status === 'declined' ? 'Call declined'
     : call.status === 'noanswer' ? 'No answer'
     : 'Connected'

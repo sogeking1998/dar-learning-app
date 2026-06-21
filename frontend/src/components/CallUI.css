@@ -9,7 +9,9 @@
 .callui-incoming {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   color: #fff; text-align: center;
+  width: 100%; max-width: 360px; padding: 24px; box-sizing: border-box;
 }
+.callui-name { word-break: break-word; }
 .callui-avatar {
   width: 96px; height: 96px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -66,5 +68,13 @@
 .callui-ctl.hangup:hover { background: #b91c1c; }
 
 @media (max-width: 600px) {
-  .callui-local-video { width: 110px; right: 12px; bottom: 12px; }
+  .callui-local-video { width: 104px; right: 12px; bottom: 12px; }
+  .callui-avatar { width: 84px; height: 84px; font-size: 30px; }
+  .callui-avatar.big { width: 104px; height: 104px; font-size: 38px; }
+  .callui-name { font-size: 1.15rem; }
+  .callui-name.lg { font-size: 1.3rem; }
+  .callui-incoming-btns { gap: 32px; margin-top: 22px; }
+  .callui-btn { width: 60px; height: 60px; }
+  .callui-controls { gap: 14px; padding: 16px; }
+  .callui-ctl { width: 50px; height: 50px; }
 }
