@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext'
 import { useMessages } from '../MessagesContext'
 import { getAvailability, createBooking, DEFAULT_WEEKDAYS, DEFAULT_SLOTS } from '../calendarStore'
 import BookingModal from '../components/BookingModal'
+import CallModal from '../components/CallModal'
 import Toast from '../components/Toast'
 import './Messages.css'
 
@@ -20,9 +21,18 @@ export default function Messages() {
   const [showBooking, setShowBooking] = useState(false)
   const [bookingAvail, setBookingAvail] = useState(null)
   const [toast, setToast] = useState(null)
+  const [call, setCall] = useState(null)   // { mode: 'audio' | 'video' }
   const scrollRef = useRef(null)
 
   const canBook = !isAdmin && !isSuperAdmin   // only employees book meetings
+  const myName = session?.user?.user_metadata?.name || session?.user?.email?.split('@')[0] || 'DAR member'
+  // Deterministic private room for this pair, so both sides join the same call.
+  const roomFor = otherId => `dar-capdev-${[me, otherId].sort().join('-')}`
+
+  const startCall = mode => {
+    setCall({ mode })
+    sendMessage(activeId, mode === 'audio' ? '📞 Started an audio call — open Messages and tap the phone to join.' : '📹 Started a video call — open Messages and tap the camera to join.')
+  }
 
   // Header info comes from the directory (or the conversation summary as fallback).
   const active = activeId
@@ -209,8 +219,8 @@ export default function Messages() {
                       <CalendarPlus size={15} /> <span>Book a Meeting</span>
                     </button>
                   )}
-                  <button aria-label="Call"><Phone size={17} /></button>
-                  <button aria-label="Video call"><Video size={17} /></button>
+                  <button aria-label="Audio call" title="Audio call" onClick={() => startCall('audio')}><Phone size={17} /></button>
+                  <button aria-label="Video call" title="Video call" onClick={() => startCall('video')}><Video size={17} /></button>
                 </div>
               </header>
 
@@ -253,6 +263,16 @@ export default function Messages() {
           }}
           onClose={() => setShowBooking(false)}
           onConfirm={handleBooking}
+        />
+      )}
+
+      {call && active && (
+        <CallModal
+          room={roomFor(activeId)}
+          mode={call.mode}
+          name={myName}
+          withName={active.name}
+          onClose={() => setCall(null)}
         />
       )}
     </div>

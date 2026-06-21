@@ -8,7 +8,18 @@
       "Bash(cd /c/Users/r8cas/Desktop/dar-learning-app/frontend && ls -a | grep -i env)",
       "Bash(node -e *)",
       "Bash(rm -f scripts/seedMaterials.mjs)",
-      "Bash(rmdir scripts *)"
+      "Bash(rmdir scripts *)",
+      "Bash(mkdir -p /c/Users/r8cas/Desktop/dar-pptx)",
+      "Read(//c/Users/r8cas/Desktop/**)",
+      "Bash(npm init *)",
+      "Bash(node generate.js)",
+      "Bash(python /c/Users/r8cas/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/86cb9d69-b584-4765-99fb-719d260e022d/cc1a2250-fef5-4b6f-b7d8-6340be270fca/skills/pptx/scripts/office/soffice.py --headless --convert-to pdf DAR-CapDev-System-Overview.pptx)",
+      "PowerShell($p = \"C:\\\\Users\\\\r8cas\\\\AppData\\\\Roaming\\\\Claude\\\\local-agent-mode-sessions\\\\skills-plugin\\\\86cb9d69-b584-4765-99fb-719d260e022d\\\\cc1a2250-fef5-4b6f-b7d8-6340be270fca\\\\skills\\\\pptx\\\\scripts\\\\office\\\\soffice.py\"; Test-Path $p; \\(Get-Command soffice -ErrorAction SilentlyContinue\\).Source; \\(Get-Command pdftoppm -ErrorAction SilentlyContinue\\).Source)",
+      "Read(//c/Users/r8cas/.claude/projects/C--Users-r8cas-Desktop-dar-learning-app/cc2a3447-7a0f-4341-a374-81e192382d1f/tool-results/**)",
+      "Bash(python -c ' *)",
+      "mcp__visualize__show_widget",
+      "Bash(node erd.js)",
+      "Bash(node erd2.js)"
     ]
   }
 }
