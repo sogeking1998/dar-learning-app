@@ -429,20 +429,24 @@
 .msg-bubble-row.me .msg-file-chip { background: rgba(255,255,255,0.2); color: #fff; }
 .msg-file-name { font-weight: 600; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
 
-/* Reactions */
-.msg-reacts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+/* Reactions — float just below the bubble */
+.msg-bubble-row.has-reacts { margin-bottom: 14px; }
+.msg-reacts { position: absolute; bottom: -12px; display: flex; gap: 3px; z-index: 2; }
+.msg-bubble-row.me .msg-reacts { right: 8px; }
+.msg-bubble-row.them .msg-reacts { left: 8px; }
 .msg-react {
-  display: inline-flex; align-items: center; gap: 3px;
-  font-size: 12px; padding: 2px 7px; border-radius: 99px; cursor: pointer;
-  border: 1px solid var(--bdr2); background: var(--surface); color: var(--t2); font-family: inherit;
+  display: inline-flex; align-items: center; gap: 2px; cursor: pointer; font-family: inherit;
+  font-size: 11px; line-height: 1.4; padding: 1px 6px; border-radius: 99px;
+  background: var(--surface); border: 1px solid var(--bdr2); color: var(--t2); box-shadow: var(--s1);
 }
-.msg-react.mine { background: var(--g100); border-color: var(--g600); color: var(--g700); }
+.msg-react.mine { background: var(--g100); border-color: var(--g500); color: var(--g700); }
+
 .msg-react-add {
   align-self: center; flex-shrink: 0;
-  width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer;
+  width: 30px; height: 30px; border-radius: 50%; border: none; cursor: pointer;
   background: transparent; color: var(--t4);
   display: flex; align-items: center; justify-content: center;
-  opacity: 0.45; transition: opacity 0.12s, background 0.12s;
+  opacity: 0; transition: opacity 0.12s, background 0.12s;
 }
 .msg-bubble-row:hover .msg-react-add { opacity: 1; }
 .msg-react-add:hover { background: var(--surface-2); color: var(--g700); }
@@ -474,13 +478,29 @@
 
 /* Composer */
 .msg-composer {
-  display: flex; align-items: center; gap: 10px;
-  padding: 14px 18px;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 18px 14px;
   background: var(--surface);
   border-top: 1px solid var(--bdr2);
   flex-shrink: 0;
-  position: relative;
 }
+.msg-composer-row { display: flex; align-items: center; gap: 10px; position: relative; }
+
+/* Staged file preview (before sending) */
+.msg-pending {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px 8px 12px; border-radius: 10px;
+  background: var(--surface-2); border: 1px solid var(--bdr2);
+}
+.msg-pending-ic { color: var(--g600); flex-shrink: 0; }
+.msg-pending-name { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msg-pending-x {
+  width: 26px; height: 26px; flex-shrink: 0; border: none; cursor: pointer;
+  background: none; color: var(--t4); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.msg-pending-x:hover { background: var(--bdr2); color: var(--t1); }
+
 .msg-tool {
   width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -545,6 +565,9 @@
   .msg-shell.show-thread .msg-list { display: none; }
   .msg-shell.show-thread .msg-thread { display: flex; }
   .msg-back { display: flex; }
+
+  /* On touch screens, reactions are opened by long-pressing the message */
+  .msg-react-add { display: none; }
 }
 
 /* Phone: compact header, icon-only book button, roomier bubbles */

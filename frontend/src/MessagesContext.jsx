@@ -166,11 +166,11 @@ export function MessagesProvider({ children }) {
     if (data) setMsgs(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data])
   }
 
-  const sendFile = async (recipientId, file) => {
+  const sendFile = async (recipientId, file, text = '') => {
     if (!me || !recipientId || !file) return
     const up = await uploadMessageFile(me, file)
     if (up.error) return { error: up.error }
-    const { data } = await sendMessageRow(me, recipientId, '', up.url, up.name)
+    const { data } = await sendMessageRow(me, recipientId, (text || '').trim(), up.url, up.name)
     if (data) setMsgs(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data])
     return {}
   }
