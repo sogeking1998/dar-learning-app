@@ -33,13 +33,20 @@ export function CallProvider({ children }) {
   const timerRef = useRef(null)
   const facingRef = useRef('user')
   const callRef = useRef(null)
+  const restartRef = useRef(null)
 
   useEffect(() => { callRef.current = call }, [call])
 
   const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null } }
 
+  const videoConstraints = () => ({
+    facingMode: facingRef.current,
+    width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24 },
+  })
+
   const cleanup = useCallback(() => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
+    if (restartRef.current) { clearTimeout(restartRef.current); restartRef.current = null }
     if (pcRef.current) { try { pcRef.current.close() } catch {} pcRef.current = null }
     if (localRef.current) { localRef.current.getTracks().forEach(t => t.stop()); localRef.current = null }
     if (chRef.current) { supabase.removeChannel(chRef.current); chRef.current = null }
@@ -52,16 +59,50 @@ export function CallProvider({ children }) {
     if (chRef.current) chRef.current.send({ type: 'broadcast', event, payload })
   }
 
+  // Keep video light so it doesn't overwhelm the relay.
+  const capBitrate = async () => {
+    const pc = pcRef.current; if (!pc) return
+    const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video')
+    if (!sender || !sender.getParameters) return
+    try {
+      const p = sender.getParameters()
+      p.encodings = (p.encodings && p.encodings.length) ? p.encodings : [{}]
+      p.encodings[0].maxBitrate = 600000
+      p.encodings[0].maxFramerate = 24
+      await sender.setParameters(p)
+    } catch {}
+  }
+
+  // Recover a dropped connection without ending the call.
+  const restartIce = async () => {
+    const pc = pcRef.current; if (!pc) return
+    try {
+      const offer = await pc.createOffer({ iceRestart: true })
+      await pc.setLocalDescription(offer)
+      send('offer', { type: offer.type, sdp: offer.sdp })
+    } catch {}
+  }
+
   const newPeer = useCallback(() => {
     const pc = new RTCPeerConnection(ICE)
     pc.onicecandidate = e => { if (e.candidate) send('ice', e.candidate.toJSON()) }
     pc.ontrack = e => setRemoteStream(new MediaStream(e.streams[0].getTracks()))
     pc.onconnectionstatechange = () => {
       const st = pc.connectionState
-      if (st === 'connected') { clearTimer(); setCall(c => c ? { ...c, status: 'connected' } : c) }
-      else if (st === 'disconnected' || st === 'failed') {
-        // Don't auto-hang-up — a brief drop (e.g. when turning video on) can recover.
+      if (st === 'connected') {
+        clearTimer()
+        if (restartRef.current) { clearTimeout(restartRef.current); restartRef.current = null }
+        setCall(c => c ? { ...c, status: 'connected' } : c)
+      } else if (st === 'disconnected' || st === 'failed') {
+        // Don't auto-hang-up — try to recover with an ICE restart (caller drives it).
         setCall(c => (c && c.status === 'connected') ? { ...c, status: 'reconnecting' } : c)
+        if (roleRef.current === 'caller') {
+          if (restartRef.current) clearTimeout(restartRef.current)
+          restartRef.current = setTimeout(() => {
+            const p = pcRef.current
+            if (p && (p.connectionState === 'disconnected' || p.connectionState === 'failed')) restartIce()
+          }, 1500)
+        }
       }
     }
     pcRef.current = pc
@@ -76,7 +117,7 @@ export function CallProvider({ children }) {
   }
 
   const getMedia = async mode => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: mode === 'video' })
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: mode === 'video' ? videoConstraints() : false })
     localRef.current = stream
     setLocalStream(stream)
     return stream
@@ -135,6 +176,7 @@ export function CallProvider({ children }) {
     }
     const pc = newPeer()
     localRef.current.getTracks().forEach(t => pc.addTrack(t, localRef.current))
+    capBitrate()
     openChannel(room, mode)
     setCall({ status: 'calling', role: 'caller', peerId: user.id, peerName: user.name, mode, room })
 
@@ -177,6 +219,7 @@ export function CallProvider({ children }) {
     }
     const pc = newPeer()
     localRef.current.getTracks().forEach(t => pc.addTrack(t, localRef.current))
+    capBitrate()
     setCall(c => ({ ...c, status: 'connecting' }))
     send('accept')
   }
@@ -208,7 +251,7 @@ export function CallProvider({ children }) {
     if (!pc || !ls) return
     if (ls.getVideoTracks().length) { ls.getVideoTracks().forEach(t => { t.enabled = true }); setCamOff(false); return }
     let v
-    try { v = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingRef.current } }) }
+    try { v = await navigator.mediaDevices.getUserMedia({ video: videoConstraints() }) }
     catch { alert('Could not access the camera.'); return }
     const track = v.getVideoTracks()[0]
     ls.addTrack(track)
@@ -216,6 +259,7 @@ export function CallProvider({ children }) {
     const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video')
     if (sender) await sender.replaceTrack(track)
     else { pc.addTrack(track, ls); await renegotiate() }
+    await capBitrate()
     setCamOff(false)
   }
 
@@ -225,11 +269,11 @@ export function CallProvider({ children }) {
     if (!pc || !ls || !ls.getVideoTracks().length) return
     facingRef.current = facingRef.current === 'user' ? 'environment' : 'user'
     let v
-    try { v = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingRef.current } }) }
+    try { v = await navigator.mediaDevices.getUserMedia({ video: videoConstraints() }) }
     catch { return }
     const track = v.getVideoTracks()[0]
     const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video')
-    if (sender) await sender.replaceTrack(track)
+    if (sender) { await sender.replaceTrack(track); await capBitrate() }
     const old = ls.getVideoTracks()[0]
     if (old) { ls.removeTrack(old); old.stop() }
     ls.addTrack(track)
