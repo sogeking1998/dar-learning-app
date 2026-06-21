@@ -1,0 +1,109 @@
+.ob-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(8, 21, 16, 0.55);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ob-card {
+  width: 100%;
+  max-width: 440px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 32px 30px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+  animation: ob-pop 0.2s ease-out;
+}
+
+@keyframes ob-pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ob-header { text-align: center; margin-bottom: 22px; }
+
+.ob-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f5132, #157347);
+  color: #fff;
+}
+
+.ob-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f5132;
+  margin: 0 0 8px;
+}
+
+.ob-sub {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.ob-form { display: flex; flex-direction: column; gap: 16px; }
+
+.ob-field label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.ob-input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  font-size: 0.95rem;
+  outline: none;
+  box-sizing: border-box;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ob-input:focus {
+  border-color: #157347;
+  box-shadow: 0 0 0 3px rgba(21, 115, 71, 0.15);
+}
+
+.ob-btn {
+  margin-top: 4px;
+  width: 100%;
+  padding: 12px;
+  background: #157347;
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ob-btn:hover:not(:disabled) { background: #0f5132; }
+.ob-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.ob-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+}

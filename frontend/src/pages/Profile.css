@@ -1,0 +1,152 @@
+.profile-page .page-header { margin-bottom: 20px; }
+.page-title { font-size: 28px; font-weight: 800; color: var(--t2); margin-bottom: 5px; letter-spacing: -0.8px; }
+.page-sub   { font-size: 14px; color: var(--t4); }
+
+/* Toast */
+.pf-toast {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--g100); color: var(--g700);
+  border: 1px solid #bbf7d0;
+  font-size: 13px; font-weight: 600;
+  padding: 11px 16px; border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+/* Identity banner */
+.pf-banner {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 22px;
+  background: #081510;
+  border-radius: var(--rad-l);
+  padding: 30px 32px;
+  margin-bottom: 20px;
+}
+.pf-banner-mesh {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 12% 40%, rgba(34,197,94,0.18) 0%, transparent 50%),
+    radial-gradient(circle at 90% 80%, rgba(245,158,11,0.12) 0%, transparent 45%);
+  pointer-events: none;
+}
+.pf-avatar {
+  width: 84px; height: 84px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--g600), var(--g400));
+  color: #fff; font-size: 28px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; position: relative; z-index: 1;
+  box-shadow: 0 4px 20px rgba(22,163,74,0.5), 0 0 0 4px rgba(255,255,255,0.06);
+}
+.pf-banner-info { position: relative; z-index: 1; flex: 1; min-width: 0; }
+.pf-name { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-bottom: 4px; }
+.pf-position { font-size: 13px; color: rgba(255,255,255,0.55); margin-bottom: 10px; }
+.pf-div-tag {
+  display: inline-block;
+  font-size: 11.5px; font-weight: 600;
+  color: var(--g400);
+  background: rgba(74,222,128,0.12);
+  border: 1px solid rgba(74,222,128,0.2);
+  padding: 4px 12px; border-radius: 99px;
+}
+
+.pf-edit-btn {
+  position: relative; z-index: 1; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--a400); color: #0a1a0a;
+  font-size: 13px; font-weight: 700; font-family: inherit;
+  padding: 10px 18px; border-radius: 10px;
+  cursor: pointer; border: none;
+  box-shadow: 0 4px 16px rgba(251,191,36,0.3);
+  transition: all 0.2s;
+}
+.pf-edit-btn:hover { background: #fff; transform: translateY(-2px); }
+
+/* Card */
+.pf-card {
+  background: var(--surface);
+  border-radius: var(--rad-l);
+  box-shadow: var(--s1);
+  overflow: hidden;
+}
+.pf-card-hd {
+  padding: 18px 26px;
+  border-bottom: 1px solid var(--bdr2);
+}
+.pf-card-title { font-size: 15px; font-weight: 700; color: var(--t1); }
+
+.pf-fields { padding: 8px 26px; }
+
+.pf-field {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--bdr2);
+}
+.pf-field:last-child { border-bottom: none; }
+
+.pf-field-icon {
+  width: 40px; height: 40px; border-radius: 11px;
+  background: var(--g100); color: var(--g700);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.pf-field-body { flex: 1; min-width: 0; }
+.pf-field-label {
+  font-size: 11px; font-weight: 600; color: var(--t4);
+  text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 4px;
+}
+.pf-field-value { font-size: 14.5px; font-weight: 500; color: var(--t1); }
+
+.pf-input {
+  width: 100%; max-width: 440px;
+  padding: 9px 13px;
+  border: 1.5px solid var(--bdr);
+  border-radius: 9px;
+  font-size: 14px; font-family: inherit;
+  color: var(--t1); background: var(--surface);
+  outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pf-input:focus { border-color: var(--g600); box-shadow: 0 0 0 3px rgba(34,197,94,0.12); }
+
+/* Actions */
+.pf-actions {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 18px 26px;
+  border-top: 1px solid var(--bdr2);
+  background: var(--surface-2);
+}
+.pf-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; font-family: inherit;
+  padding: 10px 20px; border-radius: 10px;
+  cursor: pointer; border: none; transition: all 0.18s;
+}
+.pf-btn-cancel { background: var(--surface); color: var(--t3); border: 1.5px solid var(--bdr); }
+.pf-btn-cancel:hover { background: var(--surface-3); color: var(--t1); }
+.pf-btn-save {
+  background: var(--g700); color: #fff;
+  box-shadow: 0 2px 12px rgba(21,128,61,0.3);
+}
+.pf-btn-save:hover { background: var(--g800); transform: translateY(-1px); }
+
+/* ───────── Responsive ───────── */
+@media (max-width: 640px) {
+  .page-title { font-size: 23px; }
+  .pf-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    padding: 24px 22px;
+    gap: 16px;
+  }
+  .pf-edit-btn { align-self: stretch; justify-content: center; }
+  .pf-name { font-size: 21px; }
+  .pf-fields { padding: 6px 18px; }
+  .pf-card-hd { padding: 16px 18px; }
+  .pf-actions { padding: 16px 18px; flex-direction: column-reverse; }
+  .pf-btn { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 420px) {
+  .pf-field { gap: 12px; }
+  .pf-field-icon { width: 36px; height: 36px; }
+  .pf-avatar { width: 70px; height: 70px; font-size: 24px; }
+}

@@ -1,0 +1,38 @@
+.vid-overlay {
+  position: fixed; inset: 0; z-index: 1600;
+  background: rgba(8, 21, 16, 0.62); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.vid-modal {
+  width: 100%; max-width: 1000px;
+  background: #fff; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+.vid-hd {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eef0f2;
+}
+.vid-eyebrow { font-size: 0.74rem; font-weight: 700; color: #157347; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 3px; }
+.vid-title { font-size: 1.05rem; font-weight: 700; color: #111827; margin: 0; line-height: 1.3; }
+.vid-close {
+  width: 34px; height: 34px; flex-shrink: 0; border: none; background: #f1f3f5; color: #6b7280;
+  border-radius: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.vid-close:hover { background: #e5e7eb; color: #111827; }
+
+.vid-stage { background: #000; }
+.vid-player { width: 100%; max-height: 72vh; display: block; }
+.vid-empty { padding: 60px 20px; text-align: center; color: #9ca3af; background: #14161f; }
+
+.vid-foot {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 14px 20px;
+}
+.vid-hint { font-size: 0.84rem; color: #9ca3af; }
+.vid-done { display: inline-flex; align-items: center; gap: 6px; font-size: 0.86rem; font-weight: 700; color: #15803d; }
+.vid-btn {
+  padding: 10px 20px; border: none; border-radius: 10px;
+  background: #157347; color: #fff; font-size: 0.88rem; font-weight: 700; font-family: inherit; cursor: pointer;
+}
+.vid-btn:hover { background: #0f5132; }
