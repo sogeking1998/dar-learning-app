@@ -85,10 +85,10 @@ export default function Home() {
               <div key={a.id} className={`ann-item ${i < anns.length - 1 ? 'ann-border' : ''}`}>
                 <div className="ann-dot p-green" />
                 <div className="ann-body">
-                  <div className="ann-meta-row">
+                  <div className="ann-head">
+                    <h4 className="ann-title">{a.title}</h4>
                     <span className="ann-date">{fmtDate(a.created_at)}</span>
                   </div>
-                  <h4 className="ann-title">{a.title}</h4>
                   <p className="ann-text">{a.content}</p>
                 </div>
               </div>

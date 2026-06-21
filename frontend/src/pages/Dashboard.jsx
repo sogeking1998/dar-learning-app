@@ -5,6 +5,8 @@ import {
   Sprout, ScrollText, Scale, Building2, BookOpen
 } from 'lucide-react'
 import { MOCK_COURSES } from '../mockData'
+import { useUser } from '../UserContext'
+import { sessionCompletion, useUserProgress } from '../completion'
 import './Dashboard.css'
 
 const DIV_META = {
@@ -43,6 +45,8 @@ function DonutRing({ value }) {
 export default function Dashboard() {
   const [courses, setCourses] = useState(MOCK_COURSES)
   const [openDivs, setOpenDivs] = useState({})
+  const { user } = useUser()
+  const progress = useUserProgress(user?.id)
 
   const toggleDiv = div => setOpenDivs(prev => ({ ...prev, [div]: !prev[div] }))
 
@@ -52,12 +56,15 @@ export default function Dashboard() {
       .catch(() => {})
   }, [])
 
-  const total      = courses.length
-  const completed  = courses.filter(c => c.status === 'completed').length
-  const inProgress = courses.filter(c => c.status === 'in_progress').length
-  const overall    = Math.round(courses.reduce((s, c) => s + c.progress, 0) / (total || 1))
+  // Real completion from Supabase (video + tasks + pre + post).
+  const withComp = courses.map(c => ({ ...c, comp: sessionCompletion(c, progress) }))
 
-  const divisions = [...new Set(courses.map(c => c.division))]
+  const total      = withComp.length
+  const completed  = withComp.filter(c => c.comp.status === 'completed').length
+  const inProgress = withComp.filter(c => c.comp.status === 'in_progress').length
+  const overall    = Math.round(withComp.reduce((s, c) => s + c.comp.pct, 0) / (total || 1))
+
+  const divisions = [...new Set(withComp.map(c => c.division))]
 
   return (
     <div className="dashboard-page">
@@ -109,10 +116,10 @@ export default function Dashboard() {
 
       <div className="db-modules">
         {divisions.map(div => {
-          const divCourses = courses.filter(c => c.division === div)
+          const divCourses = withComp.filter(c => c.division === div)
           const divTotal   = divCourses.length
-          const divDone    = divCourses.filter(c => c.status === 'completed').length
-          const divPct     = Math.round(divCourses.reduce((s, c) => s + c.progress, 0) / (divTotal || 1))
+          const divDone    = divCourses.filter(c => c.comp.status === 'completed').length
+          const divPct     = Math.round(divCourses.reduce((s, c) => s + c.comp.pct, 0) / (divTotal || 1))
           const isOpen     = !!openDivs[div]
           const meta       = DIV_META[div] || { full: '', icon: BookOpen }
           const DivIcon    = meta.icon
@@ -148,7 +155,7 @@ export default function Dashboard() {
               {divCourses.map(course => (
                 <div key={course.id} className="module-row">
                   <div className="mr-left">
-                    <StatusIcon status={course.status} />
+                    <StatusIcon status={course.comp.status} />
                     <div className="mr-info">
                       <p className="mr-title">
                         {div}: Session {course.session} – {course.title}
@@ -163,23 +170,23 @@ export default function Dashboard() {
                         <div
                           className="mr-fill"
                           style={{
-                            width: `${course.progress}%`,
+                            width: `${course.comp.pct}%`,
                             background:
-                              course.progress === 100 ? 'var(--g500)'
-                              : course.progress > 0   ? 'var(--b500)'
+                              course.comp.pct === 100 ? 'var(--g500)'
+                              : course.comp.pct > 0   ? 'var(--b500)'
                               : 'transparent'
                           }}
                         />
                       </div>
-                      <span className="mr-pct">{course.progress}%</span>
+                      <span className="mr-pct">{course.comp.pct}%</span>
                     </div>
                     <span className={`status-chip ${
-                      course.status === 'completed'  ? 'chip-done'
-                      : course.status === 'in_progress' ? 'chip-progress'
+                      course.comp.status === 'completed'  ? 'chip-done'
+                      : course.comp.status === 'in_progress' ? 'chip-progress'
                       : 'chip-pending'
                     }`}>
-                      {course.status === 'completed'  ? 'Completed'
-                       : course.status === 'in_progress' ? 'In Progress'
+                      {course.comp.status === 'completed'  ? 'Completed'
+                       : course.comp.status === 'in_progress' ? 'In Progress'
                        : 'Not Started'}
                     </span>
                   </div>
