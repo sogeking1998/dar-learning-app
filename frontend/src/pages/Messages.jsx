@@ -257,22 +257,23 @@ export default function Messages() {
                   <p className="msg-thread-start">This is the start of your conversation with {active.name}.</p>
                 )}
                 {thread.map(m => (
-                  <div key={m.id} className={`msg-bubble-row ${m.from === 'me' ? 'me' : 'them'}${m.reactions.length ? ' has-reacts' : ''}`}>
-                    <div
-                      className="msg-bubble"
-                      onTouchStart={() => startPress(m.id)}
-                      onTouchEnd={endPress}
-                      onTouchMove={endPress}
-                      onContextMenu={e => e.preventDefault()}
-                    >
-                      {m.fileUrl && (
-                        <a className="msg-file-chip" href={m.fileUrl} target="_blank" rel="noreferrer" title={m.fileName}>
-                          <FileText size={18} />
-                          <span className="msg-file-name">{m.fileName || 'Attachment'}</span>
-                        </a>
-                      )}
-                      {m.text && <span className="msg-bubble-text">{m.text}</span>}
-                      <span className="msg-bubble-time">{m.time}</span>
+                  <div key={m.id} className={`msg-bubble-row ${m.from === 'me' ? 'me' : 'them'}`}>
+                    <div className="msg-msg">
+                      <div
+                        className="msg-bubble"
+                        onTouchStart={() => startPress(m.id)}
+                        onTouchEnd={endPress}
+                        onTouchMove={endPress}
+                        onContextMenu={e => e.preventDefault()}
+                      >
+                        {m.fileUrl && (
+                          <a className="msg-file-chip" href={m.fileUrl} target="_blank" rel="noreferrer" title={m.fileName}>
+                            <FileText size={18} />
+                            <span className="msg-file-name">{m.fileName || 'Attachment'}</span>
+                          </a>
+                        )}
+                        {m.text && <span className="msg-bubble-text">{m.text}</span>}
+                      </div>
                       {m.reactions.length > 0 && (
                         <div className="msg-reacts">
                           {m.reactions.map(r => (
@@ -282,6 +283,7 @@ export default function Messages() {
                           ))}
                         </div>
                       )}
+                      <span className="msg-bubble-time">{m.time}</span>
                     </div>
                     <button className="msg-react-add" onClick={() => setReactFor(reactFor === m.id ? null : m.id)} aria-label="React">
                       <Smile size={16} />
