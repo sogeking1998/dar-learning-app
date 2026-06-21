@@ -5,7 +5,7 @@ import { useAuth } from '../AuthContext'
 import { useMessages } from '../MessagesContext'
 import { getAvailability, createBooking, DEFAULT_WEEKDAYS, DEFAULT_SLOTS } from '../calendarStore'
 import BookingModal from '../components/BookingModal'
-import CallModal from '../components/CallModal'
+import { useCall } from '../CallContext'
 import Toast from '../components/Toast'
 import './Messages.css'
 
@@ -21,17 +21,13 @@ export default function Messages() {
   const [showBooking, setShowBooking] = useState(false)
   const [bookingAvail, setBookingAvail] = useState(null)
   const [toast, setToast] = useState(null)
-  const [call, setCall] = useState(null)   // { mode: 'audio' | 'video' }
   const scrollRef = useRef(null)
+  const { start: startCallEngine } = useCall()
 
   const canBook = !isAdmin && !isSuperAdmin   // only employees book meetings
-  const myName = session?.user?.user_metadata?.name || session?.user?.email?.split('@')[0] || 'DAR member'
-  // Deterministic private room for this pair, so both sides join the same call.
-  const roomFor = otherId => `dar-capdev-${[me, otherId].sort().join('-')}`
 
   const startCall = mode => {
-    setCall({ mode })
-    sendMessage(activeId, mode === 'audio' ? '📞 Started an audio call — open Messages and tap the phone to join.' : '📹 Started a video call — open Messages and tap the camera to join.')
+    if (active) startCallEngine(active, mode)
   }
 
   // Header info comes from the directory (or the conversation summary as fallback).
@@ -266,15 +262,6 @@ export default function Messages() {
         />
       )}
 
-      {call && active && (
-        <CallModal
-          room={roomFor(activeId)}
-          mode={call.mode}
-          name={myName}
-          withName={active.name}
-          onClose={() => setCall(null)}
-        />
-      )}
     </div>
   )
 }

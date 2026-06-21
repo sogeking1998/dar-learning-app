@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { UserProvider, useUser } from './UserContext'
 import { MessagesProvider } from './MessagesContext'
+import { CallProvider } from './CallContext'
 import { useAuth } from './AuthContext'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
@@ -52,7 +53,9 @@ export default function App() {
   return (
     <UserProvider>
       <MessagesProvider>
-        <AuthedApp />
+        <CallProvider>
+          <AuthedApp />
+        </CallProvider>
       </MessagesProvider>
     </UserProvider>
   )

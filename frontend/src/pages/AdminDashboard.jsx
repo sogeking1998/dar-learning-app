@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../AuthContext'
 import { MessagesProvider } from '../MessagesContext'
+import { CallProvider } from '../CallContext'
 import { getAdminBookings } from '../calendarStore'
 import { MOCK_EMPLOYEES } from '../mockData'
 import DarLogo from '../components/DarLogo'
@@ -36,7 +37,9 @@ const NAV = [
 export default function AdminDashboard() {
   return (
     <MessagesProvider>
-      <AdminConsole />
+      <CallProvider>
+        <AdminConsole />
+      </CallProvider>
     </MessagesProvider>
   )
 }

@@ -1,0 +1,70 @@
+.callui-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: #081510;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+
+/* Incoming ring */
+.callui-incoming {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: #fff; text-align: center;
+}
+.callui-avatar {
+  width: 96px; height: 96px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(140deg, #16a34a, #4ade80);
+  color: #fff; font-size: 34px; font-weight: 800; margin-bottom: 6px;
+}
+.callui-avatar.big { width: 120px; height: 120px; font-size: 44px; }
+.callui-avatar.ring { animation: callui-pulse 1.4s ease-in-out infinite; }
+@keyframes callui-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(74,222,128,0.5); }
+  50% { box-shadow: 0 0 0 18px rgba(74,222,128,0); }
+}
+.callui-name { font-size: 1.3rem; font-weight: 700; margin: 4px 0 0; }
+.callui-name.lg { font-size: 1.5rem; }
+.callui-sub { font-size: 0.9rem; color: #9cb3a6; margin: 2px 0 0; }
+
+.callui-incoming-btns { display: flex; gap: 40px; margin-top: 26px; }
+.callui-btn {
+  width: 64px; height: 64px; border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+}
+.callui-btn.accept { background: #16a34a; }
+.callui-btn.accept:hover { background: #15803d; }
+.callui-btn.decline { background: #dc2626; }
+.callui-btn.decline:hover { background: #b91c1c; }
+
+/* In-call */
+.callui-stage { position: relative; flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; }
+.callui-remote-video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+.callui-audio-center { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #fff; }
+.callui-local-video {
+  position: absolute; right: 18px; bottom: 18px;
+  width: 180px; max-width: 32vw; aspect-ratio: 3/4; object-fit: cover;
+  border-radius: 12px; border: 2px solid rgba(255,255,255,0.25); background: #000;
+}
+.callui-topbar {
+  position: absolute; top: 16px; left: 16px;
+  background: rgba(0,0,0,0.45); color: #fff; padding: 7px 14px; border-radius: 99px;
+  font-size: 0.85rem; font-weight: 600;
+}
+
+.callui-controls {
+  flex-shrink: 0; display: flex; align-items: center; gap: 18px;
+  padding: 22px; background: #0b1f17;
+}
+.callui-ctl {
+  width: 54px; height: 54px; border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.14); color: #fff; transition: background 0.14s;
+}
+.callui-ctl:hover { background: rgba(255,255,255,0.24); }
+.callui-ctl.on { background: #fff; color: #0b1f17; }
+.callui-ctl.hangup { background: #dc2626; }
+.callui-ctl.hangup:hover { background: #b91c1c; }
+
+@media (max-width: 600px) {
+  .callui-local-video { width: 110px; right: 12px; bottom: 12px; }
+}
