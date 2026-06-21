@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, Send, ArrowLeft, Phone, Video, CalendarPlus, MessageSquare, Users, Paperclip, Smile, FileText, X } from 'lucide-react'
+import { Search, Send, ArrowLeft, Phone, Video, CalendarPlus, MessageSquare, Users, Paperclip, Smile, FileText, X, Trash2 } from 'lucide-react'
 import { initials } from '../UserContext'
 import { useAuth } from '../AuthContext'
 import { useMessages, EMOJIS, REACTIONS } from '../MessagesContext'
 import { getAvailability, createBooking, DEFAULT_WEEKDAYS, DEFAULT_SLOTS } from '../calendarStore'
 import BookingModal from '../components/BookingModal'
+import ConfirmModal from '../components/ConfirmModal'
 import { useCall } from '../CallContext'
 import Toast from '../components/Toast'
 import './Messages.css'
@@ -12,7 +13,7 @@ import './Messages.css'
 export default function Messages() {
   const { session, isAdmin, isSuperAdmin } = useAuth()
   const me = session?.user?.id
-  const { conversations, users, messagesWith, sendMessage, sendFile, toggleReaction, markRead } = useMessages()
+  const { conversations, users, messagesWith, sendMessage, sendFile, toggleReaction, deleteMessage, markRead } = useMessages()
   const [activeId, setActiveId] = useState(null)
   const [tab, setTab] = useState('chats') // 'chats' | 'people'
   const [query, setQuery] = useState('')
@@ -24,6 +25,7 @@ export default function Messages() {
   const [emojiOpen, setEmojiOpen] = useState(false)
   const [reactFor, setReactFor] = useState(null)
   const [pendingFile, setPendingFile] = useState(null)
+  const [confirmDel, setConfirmDel] = useState(null)
   const scrollRef = useRef(null)
   const fileRef = useRef(null)
   const pressRef = useRef(null)
@@ -293,6 +295,11 @@ export default function Messages() {
                         {REACTIONS.map(e => (
                           <button key={e} onClick={() => { toggleReaction(m.id, e); setReactFor(null) }}>{e}</button>
                         ))}
+                        {m.from === 'me' && (
+                          <button className="msg-react-del" title="Delete for everyone" onClick={() => { setConfirmDel(m.id); setReactFor(null) }}>
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -352,6 +359,17 @@ export default function Messages() {
           }}
           onClose={() => setShowBooking(false)}
           onConfirm={handleBooking}
+        />
+      )}
+
+      {confirmDel && (
+        <ConfirmModal
+          icon={Trash2}
+          title="Delete message?"
+          message="This message will be permanently removed for everyone in the conversation."
+          confirmLabel="Delete" cancelLabel="Cancel" danger
+          onConfirm={() => { deleteMessage(confirmDel); setConfirmDel(null) }}
+          onCancel={() => setConfirmDel(null)}
         />
       )}
 

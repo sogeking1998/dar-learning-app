@@ -24,6 +24,13 @@ export async function sendMessageRow(senderId, recipientId, text, fileUrl = null
   return { data, error }
 }
 
+// Delete a message for everyone (RLS lets only the sender do this).
+export async function deleteMessageRow(messageId) {
+  const { error } = await supabase.from('messages').delete().eq('id', messageId)
+  if (error) console.error('Delete message failed:', error.message)
+  return { error }
+}
+
 // Upload a shared file to the public message-files bucket.
 export async function uploadMessageFile(senderId, file) {
   const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '')

@@ -460,6 +460,8 @@
 .msg-bubble-row.me .msg-react-bar { right: 0; }
 .msg-react-bar button { border: none; background: none; cursor: pointer; font-size: 19px; line-height: 1; padding: 2px 3px; border-radius: 8px; }
 .msg-react-bar button:hover { background: var(--surface-2); }
+.msg-react-del { display: inline-flex; align-items: center; color: #dc2626; border-left: 1px solid var(--bdr2) !important; margin-left: 2px; padding-left: 6px !important; border-radius: 0 8px 8px 0 !important; }
+.msg-react-del:hover { background: #fef2f2 !important; }
 .msg-bubble-row.them .msg-bubble {
   background: var(--surface);
   color: var(--t1);

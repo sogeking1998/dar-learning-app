@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabaseClient'
 import { useAuth } from './AuthContext'
-import { fetchMyMessages, sendMessageRow, markReadRows, uploadMessageFile, fetchReactions, addReaction, removeReaction } from './messagesStore'
+import { fetchMyMessages, sendMessageRow, markReadRows, uploadMessageFile, fetchReactions, addReaction, removeReaction, deleteMessageRow } from './messagesStore'
 
 // Emoji palette for the composer and quick reactions.
-export const EMOJIS = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤔','😅','🙏','👍','👎','👏','🙌','🔥','🎉','❤️','✅','❌','📌','😢','😮','😱','💪']
-export const REACTIONS = ['👍','❤️','😂','😮','😢','🙏']
+export const EMOJIS = ['😀','😄','😆','🙂','😉','😍','😘','😎','🤩','🥳','😅','😂','🤣','🤔','😬','😴','😮','😯','😢','😭','😡','👍','👎','👏','🙏','🙌','💪','🔥','✨','🎉','💯','❤️','💚','✅','❌','📌']
+export const REACTIONS = ['👍','❤️','😂','😮','😢','😡']
 
 // Stable avatar colour per user id.
 const COLORS = ['c-green', 'c-blue', 'c-amber', 'c-purple']
@@ -76,6 +76,12 @@ export function MessagesProvider({ children }) {
         payload => {
           setMsgs(prev => prev.some(m => m.id === payload.new.id) ? prev : [...prev, payload.new])
           setNotice({ key: payload.new.id, senderId: payload.new.sender_id, text: payload.new.text || (payload.new.file_name ? `📎 ${payload.new.file_name}` : '') })
+        })
+      .on('postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'messages' },
+        payload => {
+          const r = payload.old
+          if (r && (r.recipient_id === me || r.sender_id === me)) setMsgs(prev => prev.filter(m => m.id !== r.id))
         })
       .subscribe()
 
@@ -175,6 +181,11 @@ export function MessagesProvider({ children }) {
     return {}
   }
 
+  const deleteMessage = messageId => {
+    setMsgs(prev => prev.filter(m => m.id !== messageId))
+    deleteMessageRow(messageId)
+  }
+
   const toggleReaction = (messageId, emoji) => {
     const mine = reactions.find(r => r.message_id === messageId && r.user_id === me && r.emoji === emoji)
     if (mine) {
@@ -196,7 +207,7 @@ export function MessagesProvider({ children }) {
   const clearNotice = () => setNotice(null)
 
   return (
-    <MessagesContext.Provider value={{ users, conversations, messagesWith, sendMessage, sendFile, toggleReaction, markRead, unreadTotal, notice, clearNotice }}>
+    <MessagesContext.Provider value={{ users, conversations, messagesWith, sendMessage, sendFile, toggleReaction, deleteMessage, markRead, unreadTotal, notice, clearNotice }}>
       {children}
     </MessagesContext.Provider>
   )
