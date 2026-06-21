@@ -48,7 +48,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     axios.get('/api/dashboard')
-      .then(r => setCourses(r.data.courses))
+      .then(r => { if (Array.isArray(r.data?.courses)) setCourses(r.data.courses) })
       .catch(() => {})
   }, [])
 

@@ -25,7 +25,7 @@ export default function Certificates() {
   const progress = useUserProgress(user?.id)
 
   useEffect(() => {
-    axios.get('/api/courses').then(r => setCourses(r.data)).catch(() => {})
+    axios.get('/api/courses').then(r => { if (Array.isArray(r.data)) setCourses(r.data) }).catch(() => {})
   }, [])
 
   // Real completion: video + task + pre-test + post-test all done.

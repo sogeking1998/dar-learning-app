@@ -35,7 +35,7 @@ export default function Resources() {
   const [open, setOpen] = useState({})   // { course_id: bool } — collapsed by default
 
   useEffect(() => {
-    axios.get('/api/courses').then(r => setCourses(r.data)).catch(() => {})
+    axios.get('/api/courses').then(r => { if (Array.isArray(r.data)) setCourses(r.data) }).catch(() => {})
     getMaterialsMap().then(setMaterials)
   }, [])
 

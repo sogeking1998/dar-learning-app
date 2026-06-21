@@ -96,7 +96,7 @@ export default function BrowseCourses() {
 
   useEffect(() => {
     axios.get('/api/courses')
-      .then(r => setCourses(r.data))
+      .then(r => { if (Array.isArray(r.data)) setCourses(r.data) })
       .catch(() => {})
   }, [])
 

@@ -20,7 +20,7 @@ export default function MyCourses() {
   const progress = useUserProgress(user?.id)
 
   useEffect(() => {
-    axios.get('/api/courses').then(r => setCourses(r.data)).catch(() => {})
+    axios.get('/api/courses').then(r => { if (Array.isArray(r.data)) setCourses(r.data) }).catch(() => {})
   }, [])
 
   const openInBrowse = course =>
