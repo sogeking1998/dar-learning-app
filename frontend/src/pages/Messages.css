@@ -441,6 +441,12 @@
   background: var(--surface); border: 1px solid var(--bdr2); color: var(--t2); box-shadow: var(--s1);
 }
 .msg-react.mine { background: var(--g100); border-color: var(--g500); color: var(--g700); }
+.msg-react-n { margin-left: 1px; }
+
+/* Noto emoji images */
+.noto-emoji { display: block; }
+.noto-emoji.inline { display: inline-block; vertical-align: -0.2em; margin: 0 1px; }
+.msg-emoji-pop .noto-emoji, .msg-react-bar .noto-emoji { display: block; }
 
 .msg-react-add {
   align-self: center; flex-shrink: 0;

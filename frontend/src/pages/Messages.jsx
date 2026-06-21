@@ -3,6 +3,7 @@ import { Search, Send, ArrowLeft, Phone, Video, CalendarPlus, MessageSquare, Use
 import { initials } from '../UserContext'
 import { useAuth } from '../AuthContext'
 import { useMessages, EMOJIS, REACTIONS } from '../MessagesContext'
+import { NotoEmoji, renderEmoji } from '../emoji'
 import { getAvailability, createBooking, DEFAULT_WEEKDAYS, DEFAULT_SLOTS } from '../calendarStore'
 import BookingModal from '../components/BookingModal'
 import ConfirmModal from '../components/ConfirmModal'
@@ -274,13 +275,13 @@ export default function Messages() {
                             <span className="msg-file-name">{m.fileName || 'Attachment'}</span>
                           </a>
                         )}
-                        {m.text && <span className="msg-bubble-text">{m.text}</span>}
+                        {m.text && <span className="msg-bubble-text">{renderEmoji(m.text)}</span>}
                       </div>
                       {m.reactions.length > 0 && (
                         <div className="msg-reacts">
                           {m.reactions.map(r => (
                             <button key={r.emoji} className={`msg-react${r.mine ? ' mine' : ''}`} onClick={() => toggleReaction(m.id, r.emoji)}>
-                              {r.emoji}{r.count > 1 ? ` ${r.count}` : ''}
+                              <NotoEmoji char={r.emoji} size={14} />{r.count > 1 ? <span className="msg-react-n">{r.count}</span> : null}
                             </button>
                           ))}
                         </div>
@@ -293,7 +294,7 @@ export default function Messages() {
                     {reactFor === m.id && (
                       <div className="msg-react-bar">
                         {REACTIONS.map(e => (
-                          <button key={e} onClick={() => { toggleReaction(m.id, e); setReactFor(null) }}>{e}</button>
+                          <button key={e} onClick={() => { toggleReaction(m.id, e); setReactFor(null) }}><NotoEmoji char={e} size={22} /></button>
                         ))}
                         {m.from === 'me' && (
                           <button className="msg-react-del" title="Delete for everyone" onClick={() => { setConfirmDel(m.id); setReactFor(null) }}>
@@ -330,7 +331,7 @@ export default function Messages() {
                   {emojiOpen && (
                     <div className="msg-emoji-pop">
                       {EMOJIS.map(e => (
-                        <button type="button" key={e} onClick={() => setDraft(d => d + e)}>{e}</button>
+                        <button type="button" key={e} onClick={() => setDraft(d => d + e)}><NotoEmoji char={e} size={24} /></button>
                       ))}
                     </div>
                   )}
