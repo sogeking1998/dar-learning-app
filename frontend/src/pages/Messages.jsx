@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, Send, ArrowLeft, Phone, Video, CalendarPlus, MessageSquare, Users } from 'lucide-react'
+import { Search, Send, ArrowLeft, Phone, Video, CalendarPlus, MessageSquare, Users, Paperclip, Smile, FileText } from 'lucide-react'
 import { initials } from '../UserContext'
 import { useAuth } from '../AuthContext'
-import { useMessages } from '../MessagesContext'
+import { useMessages, EMOJIS, REACTIONS } from '../MessagesContext'
 import { getAvailability, createBooking, DEFAULT_WEEKDAYS, DEFAULT_SLOTS } from '../calendarStore'
 import BookingModal from '../components/BookingModal'
 import { useCall } from '../CallContext'
@@ -12,7 +12,7 @@ import './Messages.css'
 export default function Messages() {
   const { session, isAdmin, isSuperAdmin } = useAuth()
   const me = session?.user?.id
-  const { conversations, users, messagesWith, sendMessage, markRead } = useMessages()
+  const { conversations, users, messagesWith, sendMessage, sendFile, toggleReaction, markRead } = useMessages()
   const [activeId, setActiveId] = useState(null)
   const [tab, setTab] = useState('chats') // 'chats' | 'people'
   const [query, setQuery] = useState('')
@@ -21,8 +21,17 @@ export default function Messages() {
   const [showBooking, setShowBooking] = useState(false)
   const [bookingAvail, setBookingAvail] = useState(null)
   const [toast, setToast] = useState(null)
+  const [emojiOpen, setEmojiOpen] = useState(false)
+  const [reactFor, setReactFor] = useState(null)
   const scrollRef = useRef(null)
+  const fileRef = useRef(null)
   const { start: startCallEngine } = useCall()
+
+  const onPickFile = e => {
+    const f = e.target.files?.[0]
+    if (f && activeId) sendFile(activeId, f)
+    e.target.value = ''
+  }
 
   const canBook = !isAdmin && !isSuperAdmin   // only employees book meetings
 
@@ -227,14 +236,54 @@ export default function Messages() {
                 {thread.map(m => (
                   <div key={m.id} className={`msg-bubble-row ${m.from === 'me' ? 'me' : 'them'}`}>
                     <div className="msg-bubble">
-                      {m.text}
+                      {m.fileUrl && (
+                        <a className="msg-file-chip" href={m.fileUrl} target="_blank" rel="noreferrer" title={m.fileName}>
+                          <FileText size={18} />
+                          <span className="msg-file-name">{m.fileName || 'Attachment'}</span>
+                        </a>
+                      )}
+                      {m.text && <span className="msg-bubble-text">{m.text}</span>}
                       <span className="msg-bubble-time">{m.time}</span>
+                      {m.reactions.length > 0 && (
+                        <div className="msg-reacts">
+                          {m.reactions.map(r => (
+                            <button key={r.emoji} className={`msg-react${r.mine ? ' mine' : ''}`} onClick={() => toggleReaction(m.id, r.emoji)}>
+                              {r.emoji}{r.count > 1 ? ` ${r.count}` : ''}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                    <button className="msg-react-add" onClick={() => setReactFor(reactFor === m.id ? null : m.id)} aria-label="React">
+                      <Smile size={15} />
+                    </button>
+                    {reactFor === m.id && (
+                      <div className="msg-react-bar">
+                        {REACTIONS.map(e => (
+                          <button key={e} onClick={() => { toggleReaction(m.id, e); setReactFor(null) }}>{e}</button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
 
               <form className="msg-composer" onSubmit={send}>
+                <input type="file" hidden ref={fileRef} onChange={onPickFile}
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,image/*" />
+                <button type="button" className="msg-tool" onClick={() => fileRef.current?.click()} aria-label="Attach file" title="Attach a file">
+                  <Paperclip size={18} />
+                </button>
+                <button type="button" className="msg-tool" onClick={() => setEmojiOpen(o => !o)} aria-label="Emoji" title="Emoji">
+                  <Smile size={18} />
+                </button>
+                {emojiOpen && (
+                  <div className="msg-emoji-pop">
+                    {EMOJIS.map(e => (
+                      <button type="button" key={e} onClick={() => setDraft(d => d + e)}>{e}</button>
+                    ))}
+                  </div>
+                )}
                 <input
                   className="msg-input"
                   placeholder="Type a message…"

@@ -1,7 +1,11 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabaseClient'
 import { useAuth } from './AuthContext'
-import { fetchMyMessages, sendMessageRow, markReadRows } from './messagesStore'
+import { fetchMyMessages, sendMessageRow, markReadRows, uploadMessageFile, fetchReactions, addReaction, removeReaction } from './messagesStore'
+
+// Emoji palette for the composer and quick reactions.
+export const EMOJIS = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤔','😅','🙏','👍','👎','👏','🙌','🔥','🎉','❤️','✅','❌','📌','😢','😮','😱','💪']
+export const REACTIONS = ['👍','❤️','😂','😮','😢','🙏']
 
 // Stable avatar colour per user id.
 const COLORS = ['c-green', 'c-blue', 'c-amber', 'c-purple']
@@ -25,6 +29,7 @@ export function MessagesProvider({ children }) {
   const [directory, setDirectory] = useState([])  // real users from `profiles`
   const [onlineIds, setOnlineIds] = useState([])  // ids currently connected
   const [msgs, setMsgs] = useState([])            // all message rows involving me
+  const [reactions, setReactions] = useState([])  // {message_id, user_id, emoji}
   const [notice, setNotice] = useState(null)      // newest incoming message, for the toast
 
   // Load everyone (except yourself) from Supabase for the People tab.
@@ -70,11 +75,24 @@ export function MessagesProvider({ children }) {
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${me}` },
         payload => {
           setMsgs(prev => prev.some(m => m.id === payload.new.id) ? prev : [...prev, payload.new])
-          setNotice({ key: payload.new.id, senderId: payload.new.sender_id, text: payload.new.text })
+          setNotice({ key: payload.new.id, senderId: payload.new.sender_id, text: payload.new.text || (payload.new.file_name ? `📎 ${payload.new.file_name}` : '') })
         })
       .subscribe()
 
     return () => { active = false; supabase.removeChannel(channel) }
+  }, [me])
+
+  // Reactions: load + keep in sync live.
+  useEffect(() => {
+    if (!me) return
+    let active = true
+    fetchReactions().then(r => { if (active) setReactions(r) })
+    const ch = supabase
+      .channel(`reactions-${me}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions' },
+        () => { fetchReactions().then(r => setReactions(r)) })
+      .subscribe()
+    return () => { active = false; supabase.removeChannel(ch) }
   }, [me])
 
   const usersById = useMemo(() => {
@@ -107,7 +125,7 @@ export function MessagesProvider({ children }) {
         color: u.color || colorFor(otherId),
         online: onlineIds.includes(String(otherId)),
         unread: list.filter(m => m.recipient_id === me && !m.read_at).length,
-        lastText: `${last.sender_id === me ? 'You: ' : ''}${last.text}`,
+        lastText: `${last.sender_id === me ? 'You: ' : ''}${last.text || (last.file_name ? '📎 ' + last.file_name : '')}`,
         time: fmtTime(last.created_at),
         ts: new Date(last.created_at).getTime(),
       }
@@ -119,18 +137,53 @@ export function MessagesProvider({ children }) {
     [msgs, me]
   )
 
+  // Group reactions per message → [{ emoji, count, mine }]
+  const reactionsFor = id => {
+    const rows = reactions.filter(r => r.message_id === id)
+    const by = {}
+    for (const r of rows) {
+      by[r.emoji] = by[r.emoji] || { emoji: r.emoji, count: 0, mine: false }
+      by[r.emoji].count++
+      if (r.user_id === me) by[r.emoji].mine = true
+    }
+    return Object.values(by)
+  }
+
   // Messages with one person, mapped for the thread view.
   const messagesWith = otherId => msgs
     .filter(m =>
       (m.sender_id === me && m.recipient_id === otherId) ||
       (m.sender_id === otherId && m.recipient_id === me))
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-    .map(m => ({ id: m.id, from: m.sender_id === me ? 'me' : 'them', text: m.text, time: fmtTime(m.created_at) }))
+    .map(m => ({
+      id: m.id, from: m.sender_id === me ? 'me' : 'them', text: m.text, time: fmtTime(m.created_at),
+      fileUrl: m.file_url, fileName: m.file_name, reactions: reactionsFor(m.id),
+    }))
 
   const sendMessage = async (recipientId, text) => {
     if (!me || !recipientId || !text.trim()) return
     const { data } = await sendMessageRow(me, recipientId, text.trim())
     if (data) setMsgs(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data])
+  }
+
+  const sendFile = async (recipientId, file) => {
+    if (!me || !recipientId || !file) return
+    const up = await uploadMessageFile(me, file)
+    if (up.error) return { error: up.error }
+    const { data } = await sendMessageRow(me, recipientId, '', up.url, up.name)
+    if (data) setMsgs(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data])
+    return {}
+  }
+
+  const toggleReaction = (messageId, emoji) => {
+    const mine = reactions.find(r => r.message_id === messageId && r.user_id === me && r.emoji === emoji)
+    if (mine) {
+      setReactions(prev => prev.filter(r => !(r.message_id === messageId && r.user_id === me && r.emoji === emoji)))
+      removeReaction(messageId, me, emoji)
+    } else {
+      setReactions(prev => [...prev, { id: 'tmp-' + Date.now(), message_id: messageId, user_id: me, emoji }])
+      addReaction(messageId, me, emoji)
+    }
   }
 
   const markRead = async otherId => {
@@ -143,7 +196,7 @@ export function MessagesProvider({ children }) {
   const clearNotice = () => setNotice(null)
 
   return (
-    <MessagesContext.Provider value={{ users, conversations, messagesWith, sendMessage, markRead, unreadTotal, notice, clearNotice }}>
+    <MessagesContext.Provider value={{ users, conversations, messagesWith, sendMessage, sendFile, toggleReaction, markRead, unreadTotal, notice, clearNotice }}>
       {children}
     </MessagesContext.Provider>
   )
