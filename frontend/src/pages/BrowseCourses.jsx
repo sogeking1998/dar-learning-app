@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import axios from 'axios'
 import {
   PlayCircle, FileText, Download, CheckCircle2,
-  ClipboardList, BookOpen, ChevronDown, ChevronUp, Lock
+  ClipboardList, BookOpen, ChevronDown, ChevronUp, Lock, ExternalLink
 } from 'lucide-react'
 import { MOCK_COURSES } from '../mockData'
 import { useUser } from '../UserContext'
@@ -201,35 +201,49 @@ export default function BrowseCourses() {
                 className={`session-card${highlightId === course.id ? ' session-card-highlight' : ''}${locked ? ' session-card-locked' : ''}`}
               >
                 {/* Session header */}
-                <button
-                  className="session-header"
-                  onClick={() => { if (!locked) toggleExpand(course.id) }}
-                  disabled={locked}
-                  aria-disabled={locked}
-                >
-                  <div className="sh-left">
-                    <span className="sh-num">Session {course.session}</span>
-                    <h3 className="sh-title">{course.title}</h3>
-                  </div>
-                  <div className="sh-right">
-                    {locked ? (
-                      <span className="sh-status ss-locked"><Lock size={12} /> Locked</span>
-                    ) : (
-                      <>
-                        <span className={`sh-status ${
-                          prog.status === 'completed'   ? 'ss-done'
-                          : prog.status === 'in_progress' ? 'ss-progress'
-                          : 'ss-pending'
-                        }`}>
-                          {prog.status === 'completed'   ? 'Completed'
-                           : prog.status === 'in_progress' ? 'In Progress'
-                           : 'Not Started'}
-                        </span>
-                        {openVal ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      </>
-                    )}
-                  </div>
-                </button>
+                <div className="session-header-row">
+                  <button
+                    className="session-header"
+                    onClick={() => { if (!locked) toggleExpand(course.id) }}
+                    disabled={locked}
+                    aria-disabled={locked}
+                  >
+                    <div className="sh-left">
+                      <span className="sh-num">Session {course.session}</span>
+                      <h3 className="sh-title">{course.title}</h3>
+                    </div>
+                    <div className="sh-right">
+                      {locked ? (
+                        <span className="sh-status ss-locked"><Lock size={12} /> Locked</span>
+                      ) : (
+                        <>
+                          <span className={`sh-status ${
+                            prog.status === 'completed'   ? 'ss-done'
+                            : prog.status === 'in_progress' ? 'ss-progress'
+                            : 'ss-pending'
+                          }`}>
+                            {prog.status === 'completed'   ? 'Completed'
+                             : prog.status === 'in_progress' ? 'In Progress'
+                             : 'Not Started'}
+                          </span>
+                          {openVal ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </>
+                      )}
+                    </div>
+                  </button>
+                  {!locked && (
+                    <a
+                      className="sh-open"
+                      href={`/session/${course.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Open this session in a new tab"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <ExternalLink size={16} />
+                    </a>
+                  )}
+                </div>
 
                 {/* Locked note */}
                 {locked && (

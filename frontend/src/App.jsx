@@ -13,6 +13,7 @@ import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
 import MyCourses from './pages/MyCourses'
 import BrowseCourses from './pages/BrowseCourses'
+import SessionDetail from './pages/SessionDetail'
 import Resources from './pages/Resources'
 import Certificates from './pages/Certificates'
 import Messages from './pages/Messages'
@@ -62,7 +63,23 @@ export default function App() {
 }
 
 function AuthedApp() {
-  const { user, loading: profileLoading, needsOnboarding } = useUser()
+  const { user, loading: profileLoading } = useUser()
+
+  // Wait for the profile row to load before rendering anything.
+  if (profileLoading || !user) return <Loading />
+
+  // Standalone, chrome-free pages (open-in-new-tab session view) render
+  // outside the sidebar/topbar shell but still inside the auth providers.
+  return (
+    <Routes>
+      <Route path="/session/:courseId" element={<SessionDetail />} />
+      <Route path="*" element={<AppShell />} />
+    </Routes>
+  )
+}
+
+function AppShell() {
+  const { needsOnboarding } = useUser()
   const [collapsed, setCollapsed] = useState(false)   // desktop icon rail
   const [mobileOpen, setMobileOpen] = useState(false) // mobile drawer
   const location = useLocation()
@@ -78,9 +95,6 @@ function AuthedApp() {
     document.body.style.overflow = mobileOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [mobileOpen])
-
-  // Wait for the profile row to load before rendering the layout.
-  if (profileLoading || !user) return <Loading />
 
   return (
     <div className={`app-layout${collapsed ? ' is-collapsed' : ''}${mobileOpen ? ' is-mobile-open' : ''}`}>

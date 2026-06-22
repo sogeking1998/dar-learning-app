@@ -50,13 +50,26 @@
   100% { box-shadow: 0 0 0 0 rgba(34,197,94,0), var(--s1); }
 }
 
+.session-header-row { display: flex; align-items: stretch; }
+
 .session-header {
+  flex: 1; min-width: 0;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 24px; width: 100%; text-align: left;
+  padding: 18px 24px; text-align: left;
   cursor: pointer; background: none; border: none; font-family: inherit;
   transition: background 0.1s; gap: 16px;
 }
 .session-header:hover { background: var(--surface-2); }
+
+/* Open-session-in-new-tab button */
+.sh-open {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0; width: 52px;
+  border: none; border-left: 1px solid var(--bdr2);
+  background: none; color: var(--t4); cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.sh-open:hover { background: var(--surface-2); color: var(--g700); }
 
 .sh-left { display: flex; align-items: center; gap: 14px; }
 
