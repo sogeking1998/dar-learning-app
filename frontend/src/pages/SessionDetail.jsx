@@ -10,7 +10,7 @@ import { useUser } from '../UserContext'
 import { getResultsForUser } from '../examStore'
 import { getTasksForCourse, getSubmissionsForUser } from '../taskStore'
 import { getVideoProgress } from '../progressStore'
-import { getSessionVideosForCourse, readVideoDuration } from '../videoStore'
+import { getSessionVideosForCourse, readVideoDuration, formatVideoDuration } from '../videoStore'
 import { getMaterialsForCourse } from '../materialsStore'
 import QuizModal from '../components/QuizModal'
 import TaskModal from '../components/TaskModal'
@@ -128,6 +128,8 @@ export default function SessionDetail() {
   const preResult = results[`${course.id}-pre`]
   const postResult = results[`${course.id}-post`]
   const watchedCount = videos.filter(v => videoProg[v.id]?.completed).length
+  const totalVideoSecs = videos.reduce((sum, v) => sum + (durations[v.id] || 0), 0)
+  const videoDurationLabel = formatVideoDuration(totalVideoSecs)
   const taskDoneCount = tasks.filter(t => submissions[t.id]).length
 
   // Same completion logic as the Browse Courses card.
@@ -149,7 +151,7 @@ export default function SessionDetail() {
         {course.description && <p className="sd-desc">{course.description}</p>}
 
         <div className="sd-meta">
-          {course.duration && <span className="sd-meta-item"><Clock size={15} /> {course.duration}</span>}
+          {videoDurationLabel && <span className="sd-meta-item"><Clock size={15} /> {videoDurationLabel}</span>}
           <span className="sd-meta-item"><Hash size={15} /> {course.code || `Session ${course.session}`}</span>
           <span className="sd-meta-item"><GraduationCap size={15} /> {course.division} Division</span>
         </div>

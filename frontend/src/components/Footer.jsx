@@ -1,4 +1,5 @@
 import { HelpCircle, Phone, Mail, MapPin } from 'lucide-react'
+import DarLogo from './DarLogo'
 import './Footer.css'
 
 export default function Footer() {
@@ -6,7 +7,7 @@ export default function Footer() {
     <footer className="footer">
       <div className="footer-inner">
         <div className="footer-brand">
-          <div className="footer-logo">DAR</div>
+          <div className="footer-logo"><DarLogo size={28} /></div>
           <div>
             <p className="footer-brand-name">Department of Agrarian Reform</p>
             <p className="footer-brand-sub">Online Capacity Development Program</p>

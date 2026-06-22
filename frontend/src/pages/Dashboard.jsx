@@ -7,6 +7,7 @@ import {
 import { MOCK_COURSES } from '../mockData'
 import { useUser } from '../UserContext'
 import { sessionCompletion, useUserProgress } from '../completion'
+import { getSessionDurations, formatVideoDuration } from '../videoStore'
 import './Dashboard.css'
 
 const DIV_META = {
@@ -45,6 +46,7 @@ function DonutRing({ value }) {
 export default function Dashboard() {
   const [courses, setCourses] = useState(MOCK_COURSES)
   const [openDivs, setOpenDivs] = useState({})
+  const [durations, setDurations] = useState({})  // { course_id: totalVideoSeconds }
   const { user } = useUser()
   const progress = useUserProgress(user?.id)
 
@@ -55,6 +57,8 @@ export default function Dashboard() {
       .then(r => { if (Array.isArray(r.data?.courses)) setCourses(r.data.courses) })
       .catch(() => {})
   }, [])
+
+  useEffect(() => { getSessionDurations().then(setDurations) }, [])
 
   // Real completion from Supabase (video + tasks + pre + post).
   const withComp = courses.map(c => ({ ...c, comp: sessionCompletion(c, progress) }))
@@ -160,7 +164,9 @@ export default function Dashboard() {
                       <p className="mr-title">
                         {div}: Session {course.session} – {course.title}
                       </p>
-                      <p className="mr-meta">{course.duration}</p>
+                      {formatVideoDuration(durations[course.id]) && (
+                        <p className="mr-meta">{formatVideoDuration(durations[course.id])}</p>
+                      )}
                     </div>
                   </div>
 

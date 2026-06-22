@@ -22,11 +22,10 @@
 
 .footer-logo {
   width: 40px; height: 40px;
-  background: linear-gradient(135deg, var(--g600), var(--g400));
+  background: #fff;
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 12px;
-  color: #fff; flex-shrink: 0;
+  flex-shrink: 0;
 }
 
 .footer-brand-name {

@@ -109,3 +109,22 @@ export function readVideoDuration(url) {
     v.src = url
   })
 }
+
+// Total real video length per session → { [course_id]: totalSeconds }.
+// Used to show an accurate "X min of video" instead of a hardcoded estimate.
+export async function getSessionDurations() {
+  const map = await getAllSessionVideos()
+  const out = {}
+  await Promise.all(Object.entries(map).map(async ([courseId, vids]) => {
+    const secs = await Promise.all(vids.map(v => readVideoDuration(v.url)))
+    out[courseId] = secs.reduce((sum, s) => sum + (s || 0), 0)
+  }))
+  return out
+}
+
+// Format a duration in seconds as a short label, or null when there's nothing.
+export function formatVideoDuration(seconds) {
+  if (!seconds || seconds <= 0) return null
+  const mins = Math.round(seconds / 60)
+  return mins < 1 ? '<1 min' : `${mins} min`
+}

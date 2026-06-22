@@ -5,6 +5,7 @@ import { ArrowRight, CheckCircle2, PlayCircle, Filter, RotateCcw } from 'lucide-
 import { MOCK_COURSES } from '../mockData'
 import { useUser } from '../UserContext'
 import { sessionCompletion, useUserProgress } from '../completion'
+import { getSessionDurations, formatVideoDuration } from '../videoStore'
 import './MyCourses.css'
 
 const FILTERS = ['All', 'In Progress', 'Completed', 'Not Started']
@@ -15,6 +16,7 @@ const HEAD_BG = { PBD: 'hd-pbd', LTS: 'hd-lts', AJD: 'hd-ajd', Admin: 'hd-admin'
 export default function MyCourses() {
   const [courses, setCourses] = useState(MOCK_COURSES)
   const [filter, setFilter]   = useState('All')
+  const [durations, setDurations] = useState({})  // { course_id: totalVideoSeconds }
   const nav = useNavigate()
   const { user } = useUser()
   const progress = useUserProgress(user?.id)
@@ -22,6 +24,8 @@ export default function MyCourses() {
   useEffect(() => {
     axios.get('/api/courses').then(r => { if (Array.isArray(r.data)) setCourses(r.data) }).catch(() => {})
   }, [])
+
+  useEffect(() => { getSessionDurations().then(setDurations) }, [])
 
   const openInBrowse = course =>
     nav('/courses/browse', { state: { division: course.division, courseId: course.id } })
@@ -90,7 +94,9 @@ export default function MyCourses() {
               <p className="mc-desc">{course.description}</p>
 
               <div className="mc-meta">
-                <span><PlayCircle size={12} /> {course.duration}</span>
+                {formatVideoDuration(durations[course.id]) && (
+                  <span><PlayCircle size={12} /> {formatVideoDuration(durations[course.id])}</span>
+                )}
                 <span><CheckCircle2 size={12} /> {(progress.tasks[course.id] || []).length} tasks</span>
               </div>
 

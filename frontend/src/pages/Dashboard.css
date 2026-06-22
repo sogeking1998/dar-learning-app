@@ -259,6 +259,8 @@
 .mr-left {
   display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0;
 }
+/* Lets the title column shrink so the ellipsis can engage instead of overflowing */
+.mr-info { min-width: 0; }
 
 .status-icon { flex-shrink: 0; }
 .icon-done    { color: var(--g500); }
@@ -310,6 +312,8 @@
   .module-row { flex-wrap: wrap; gap: 10px; }
   .mr-right { width: 100%; justify-content: space-between; }
   .mr-bar-wrap { width: auto; flex: 1; }
+  /* Show the full title across multiple lines instead of clipping it */
+  .mr-title { white-space: normal; overflow: visible; text-overflow: clip; }
   .division-head { padding: 13px 14px; gap: 12px; }
   .dh-full { display: none; }
   .dh-summary { gap: 10px; }
