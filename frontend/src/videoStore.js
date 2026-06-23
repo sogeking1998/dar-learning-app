@@ -98,6 +98,37 @@ export async function deleteSessionVideoById(videoId) {
   return { error }
 }
 
+// ── Welcome video ──────────────────────────────────────────────
+// The Home page welcome video is stored in the SAME session_videos table under a
+// reserved course_id (0) — no real session has id 0, so it never appears in the
+// per-session listings. This avoids any schema/migration changes.
+export const WELCOME_COURSE_ID = 0
+
+export async function getWelcomeVideo() {
+  const { data, error } = await supabase
+    .from('session_videos')
+    .select('id, url, title, created_at')
+    .eq('course_id', WELCOME_COURSE_ID)
+    .order('created_at', { ascending: false })
+    .limit(1)
+  if (error) { console.error('Load welcome video failed:', error.message); return null }
+  return data?.[0] || null
+}
+
+// Upload + store the welcome video (replaces the existing one if present).
+export async function setWelcomeVideo(file, onProgress) {
+  const existing = await getWelcomeVideo()
+  return existing
+    ? replaceSessionVideo(existing.id, WELCOME_COURSE_ID, file, onProgress)
+    : addSessionVideo(WELCOME_COURSE_ID, file, onProgress)
+}
+
+export async function deleteWelcomeVideo() {
+  const existing = await getWelcomeVideo()
+  if (!existing) return { error: null }
+  return deleteSessionVideoById(existing.id)
+}
+
 // Read a video's duration (seconds) from its URL without downloading it fully.
 export function readVideoDuration(url) {
   return new Promise(resolve => {

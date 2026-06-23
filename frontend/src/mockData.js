@@ -10,8 +10,8 @@ export const MOCK_USER = {
 export const MOCK_COURSES = [
   {
     id: 1, code: 'PBD-01', session: 1,
-    title: 'Enterprise-Based Community Organizing (e-CO) Skills',
-    shortTitle: 'e-CO Skills', division: 'PBD',
+    title: 'Overview of Support Services Delivery Programs/Projects',
+    shortTitle: 'Support Services Overview', division: 'PBD',
     description: 'Learn enterprise-based community organizing skills for agrarian reform beneficiaries.',
     progress: 100, status: 'completed', duration: '45 minutes',
     preTest: { questions: 15, completed: true, score: 12 },

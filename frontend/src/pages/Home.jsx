@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Bell, Play, Sprout, ScrollText, Scale, Building2,
 } from 'lucide-react'
 import { getAnnouncements } from '../announcementStore'
+import { getWelcomeVideo } from '../videoStore'
 import './Home.css'
 
 const ABOUT_POINTS = [
@@ -17,10 +18,19 @@ const fmtDate = d =>
 
 export default function Home() {
   const [anns, setAnns] = useState([])
+  const [welcome, setWelcome] = useState(null)
+  const [started, setStarted] = useState(false)
+  const videoRef = useRef(null)
 
   useEffect(() => {
     getAnnouncements().then(setAnns)
+    getWelcomeVideo().then(setWelcome)
   }, [])
+
+  const startPlay = () => {
+    setStarted(true)
+    videoRef.current?.play()
+  }
 
   return (
     <div className="home">
@@ -31,17 +41,40 @@ export default function Home() {
           <h2 className="sec-title"><Play size={16} /> Welcome Video</h2>
         </div>
         <div className="welcome-video">
-          <div className="wv-frame">
-            <div className="wv-mesh" />
-            <button className="wv-play" aria-label="Play welcome video">
-              <Play size={30} fill="currentColor" />
-            </button>
-            <span className="wv-duration">4:12</span>
-            <div className="wv-caption">
-              <p className="wv-cap-eyebrow">Department of Agrarian Reform</p>
-              <p className="wv-cap-title">Welcome to the Online CapDev Program</p>
+          {welcome?.url ? (
+            <div className="wv-frame wv-player">
+              <video
+                ref={videoRef}
+                className="wv-video"
+                src={welcome.url}
+                preload="metadata"
+                playsInline
+                controls={started}
+                onPlay={() => setStarted(true)}
+              />
+              {!started && (
+                <button type="button" className="wv-overlay" onClick={startPlay} aria-label="Play welcome video">
+                  <span className="wv-mesh" />
+                  <span className="wv-play wv-play-anim"><Play size={30} fill="currentColor" /></span>
+                  <span className="wv-caption">
+                    <span className="wv-cap-eyebrow">Department of Agrarian Reform</span>
+                    <span className="wv-cap-title">Welcome to the Online CapDev Program</span>
+                  </span>
+                </button>
+              )}
             </div>
-          </div>
+          ) : (
+            <div className="wv-frame">
+              <div className="wv-mesh" />
+              <div className="wv-play wv-play-static" aria-hidden="true">
+                <Play size={30} fill="currentColor" />
+              </div>
+              <div className="wv-caption">
+                <p className="wv-cap-eyebrow">Department of Agrarian Reform</p>
+                <p className="wv-cap-title">Welcome video coming soon</p>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
