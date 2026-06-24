@@ -87,7 +87,6 @@ export default function Sidebar({ collapsed = false, onToggleCollapse, onCloseMo
 
       {/* Navigation */}
       <nav className="sidebar-nav">
-        <p className="nav-label">Menu</p>
         <NavLink
           to="/" end onClick={onCloseMobile} title="Home"
           className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}

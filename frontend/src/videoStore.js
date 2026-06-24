@@ -1,9 +1,7 @@
-// Per-session presentation videos (Supabase) — a session can have several.
+// Per-session presentation videos. Files live in Cloudflare R2 (zero egress
+// cost); the database only stores the public R2 URL. Uploads go straight from
+// the browser to R2 via a short-lived presigned URL minted by /api/r2-presign.
 import { supabase } from './supabaseClient'
-
-const BUCKET = 'videos'
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY
 
 // { [course_id]: firstVideoUrl } — what the student plays per session.
 export async function getSessionVideos() {
@@ -41,38 +39,42 @@ export async function getSessionVideosForCourse(courseId) {
   return data || []
 }
 
-// Uploads via XHR so we can report real progress (the JS SDK doesn't expose it).
+// Upload a file to R2: ask the server for a presigned PUT URL, then PUT the
+// raw file straight to R2 (XHR so we can report real upload progress).
 async function uploadFile(courseId, file, onProgress) {
   const ext = (file.name.split('.').pop() || 'mp4').toLowerCase()
-  const path = `session-${courseId}-${Date.now()}.${ext}`
-  const { data } = await supabase.auth.getSession()
-  const token = data?.session?.access_token || SUPABASE_KEY
 
-  // Mirror what supabase-js sends for a File: multipart/form-data, NOT raw binary.
-  // (Don't set Content-Type — the browser adds the multipart boundary itself.)
-  const form = new FormData()
-  form.append('cacheControl', '3600')
-  form.append('', file)
+  // 1) Get a short-lived presigned upload URL from our serverless function.
+  let presign
+  try {
+    const r = await fetch('/api/r2-presign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ courseId, ext }),
+    })
+    if (!r.ok) {
+      const txt = await r.text().catch(() => '')
+      return { error: { message: `Could not start the upload (${r.status}). ${txt}`.trim() } }
+    }
+    presign = await r.json()
+  } catch (e) {
+    return { error: { message: `Upload service unreachable: ${e.message}` } }
+  }
 
+  // 2) PUT the file directly to R2.
   return new Promise(resolve => {
     const xhr = new XMLHttpRequest()
-    xhr.open('POST', `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`)
-    xhr.setRequestHeader('Authorization', `Bearer ${token}`)
-    xhr.setRequestHeader('apikey', SUPABASE_KEY)
-    xhr.setRequestHeader('x-upsert', 'true')
+    xhr.open('PUT', presign.uploadUrl)
+    xhr.setRequestHeader('Content-Type', file.type || 'video/mp4')
     xhr.upload.onprogress = e => {
       if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100))
     }
     xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path)
-        resolve({ url: pub.publicUrl })
-      } else {
-        resolve({ error: { message: `Upload failed (${xhr.status}) ${xhr.responseText || ''}`.trim() } })
-      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve({ url: presign.publicUrl })
+      else resolve({ error: { message: `Upload to R2 failed (${xhr.status}) ${xhr.responseText || ''}`.trim() } })
     }
-    xhr.onerror = () => resolve({ error: { message: 'Upload failed (network error).' } })
-    xhr.send(form)
+    xhr.onerror = () => resolve({ error: { message: 'Upload failed — likely the R2 CORS policy. Check the bucket CORS settings.' } })
+    xhr.send(file)
   })
 }
 
