@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, CheckCircle2, XCircle, Award, RotateCcw, Clock, AlertTriangle, ArrowRight, Lock } from 'lucide-react'
 import { getQuestions, saveResult } from '../examStore'
+import { PASS_PCT } from '../completion'
 import './QuizModal.css'
 
 const QUESTION_SECONDS = 60
@@ -54,7 +55,7 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
   const answered = questions.filter(q => answers[q.id] != null).length
   const score = questions.filter(q => answers[q.id] === q.answer).length
   const pct = total ? Math.round((score / total) * 100) : 0
-  const passed = pct >= 75
+  const passed = pct >= PASS_PCT
 
   const choose = (qid, i) => {
     if (submitted) return
@@ -162,7 +163,7 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
             <Award size={26} />
             <div>
               <p className="quiz-result-score">{score} / {total} correct · {pct}%</p>
-              <p className="quiz-result-msg">{passed ? 'Great job — you passed!' : 'Keep practicing — you can retake this test.'}</p>
+              <p className="quiz-result-msg">{passed ? `Great job — you passed (${PASS_PCT}% required)!` : `You need at least ${PASS_PCT}% to complete this — retake to pass.`}</p>
             </div>
           </div>
         )}

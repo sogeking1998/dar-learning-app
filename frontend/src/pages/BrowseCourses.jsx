@@ -12,6 +12,7 @@ import { getTasksMap, getSubmissionsForUser } from '../taskStore'
 import { getVideoProgress } from '../progressStore'
 import { getAllSessionVideos, readVideoDuration } from '../videoStore'
 import { getMaterialsMap } from '../materialsStore'
+import { PASS_PCT, examPassed } from '../completion'
 import QuizModal from '../components/QuizModal'
 import TaskModal from '../components/TaskModal'
 import VideoModal from '../components/VideoModal'
@@ -29,12 +30,12 @@ const fmtTime = s => {
 // One Pre/Post test card. Clickable to take the test; shows the recorded score.
 function TestCard({ label, type, course, result, locked, onTake }) {
   const pct = result ? result.pct : 0
-  const passed = pct >= 75
+  const passed = pct >= PASS_PCT
 
   return (
     <button
       type="button"
-      className={`test-card test-card-btn ${result ? 'test-card-done' : ''}${locked ? ' test-card-locked' : ''}`}
+      className={`test-card test-card-btn ${passed ? 'test-card-done' : ''}${locked ? ' test-card-locked' : ''}`}
       onClick={() => { if (!locked) onTake(type, result) }}
       disabled={locked}
       aria-disabled={locked}
@@ -50,12 +51,13 @@ function TestCard({ label, type, course, result, locked, onTake }) {
           <p className="mat-sub">
             Score: {result.score}/{result.total}
             <span className={`test-score-pct ${passed ? 'tsp-pass' : 'tsp-fail'}`}>{pct}%</span>
+            {!passed && <span className="test-need"> · Need {PASS_PCT}% to pass</span>}
           </p>
         ) : (
           <p className="mat-sub">Tap to start</p>
         )}
       </div>
-      {!locked && result && <CheckCircle2 size={15} className="test-check" />}
+      {!locked && passed && <CheckCircle2 size={15} className="test-check" />}
     </button>
   )
 }
@@ -147,8 +149,8 @@ export default function BrowseCourses() {
     const courseVideos = sessionVideos[course.id] || []
     const videoDone = !course.hasVideo || courseVideos.length === 0 || courseVideos.every(v => videoProg[v.id]?.completed)
     const taskDone = courseTasks.length === 0 || courseTasks.every(t => submissions[t.id])
-    const preDone = !!results[`${course.id}-pre`]
-    const postDone = !!results[`${course.id}-post`]
+    const preDone = examPassed(results[`${course.id}-pre`])
+    const postDone = examPassed(results[`${course.id}-post`])
     const items = [videoDone, taskDone, preDone, postDone]
     const done = items.filter(Boolean).length
     const pct = Math.round((done / items.length) * 100)

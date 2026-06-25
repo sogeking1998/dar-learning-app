@@ -6,14 +6,18 @@ import { getSubmissionsForUser, getTasksMap } from './taskStore'
 import { getVideoProgress } from './progressStore'
 import { getAllSessionVideos } from './videoStore'
 
+// A pre/post test only counts as completed once the score reaches this percentage.
+export const PASS_PCT = 80
+export const examPassed = result => (result?.pct ?? 0) >= PASS_PCT
+
 export function sessionCompletion(course, { results = {}, submissions = {}, videoProg = {}, tasks = {}, sessionVideos = {} }) {
   const courseTasks = tasks[course.id] || []
   const courseVideos = sessionVideos[course.id] || []
   // Done when every uploaded video for the session has been watched to the end.
   const videoDone = !course.hasVideo || courseVideos.length === 0 || courseVideos.every(v => videoProg[v.id]?.completed)
   const taskDone = courseTasks.length === 0 || courseTasks.every(t => submissions[t.id])
-  const preDone = !!results[`${course.id}-pre`]
-  const postDone = !!results[`${course.id}-post`]
+  const preDone = examPassed(results[`${course.id}-pre`])
+  const postDone = examPassed(results[`${course.id}-post`])
   const items = [videoDone, taskDone, preDone, postDone]
   const done = items.filter(Boolean).length
   const pct = Math.round((done / items.length) * 100)
