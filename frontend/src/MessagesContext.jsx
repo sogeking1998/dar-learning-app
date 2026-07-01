@@ -28,6 +28,7 @@ export function MessagesProvider({ children }) {
   const me = session?.user?.id
   const [directory, setDirectory] = useState([])  // real users from `profiles`
   const [onlineIds, setOnlineIds] = useState([])  // ids currently connected
+  const [seenAt, setSeenAt] = useState({})        // { userId: ISO time we last saw them online }
   const [msgs, setMsgs] = useState([])            // all message rows involving me
   const [reactions, setReactions] = useState([])  // {message_id, user_id, emoji}
   const [notice, setNotice] = useState(null)      // newest incoming message, for the toast
@@ -70,7 +71,19 @@ export function MessagesProvider({ children }) {
     if (!me) return
     const channel = supabase.channel('online-users', { config: { presence: { key: me } } })
     channel
-      .on('presence', { event: 'sync' }, () => setOnlineIds(Object.keys(channel.presenceState())))
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState()
+        const ids = Object.keys(state)
+        setOnlineIds(ids)
+        // Remember when we last saw each person online, so "Online X ago" works
+        // even if their own device never wrote a last_seen heartbeat.
+        setSeenAt(prev => {
+          const next = { ...prev }
+          const now = new Date().toISOString()
+          for (const id of ids) next[id] = state[id]?.[0]?.online_at || now
+          return next
+        })
+      })
       .subscribe(status => {
         if (status === 'SUBSCRIBED') channel.track({ online_at: new Date().toISOString() })
       })
@@ -134,8 +147,12 @@ export function MessagesProvider({ children }) {
   }, [directory])
 
   const users = useMemo(
-    () => directory.map(u => ({ ...u, online: onlineIds.includes(String(u.id)) })),
-    [directory, onlineIds]
+    () => directory.map(u => ({
+      ...u,
+      online: onlineIds.includes(String(u.id)),
+      lastSeen: seenAt[u.id] || u.lastSeen,   // prefer what we observed live
+    })),
+    [directory, onlineIds, seenAt]
   )
 
   // Conversation summaries (one per person you've exchanged messages with).
@@ -156,14 +173,14 @@ export function MessagesProvider({ children }) {
         accountRole: u.accountRole || null,
         color: u.color || colorFor(otherId),
         online: onlineIds.includes(String(otherId)),
-        lastSeen: u.lastSeen || null,
+        lastSeen: seenAt[otherId] || u.lastSeen || null,
         unread: list.filter(m => m.recipient_id === me && !m.read_at).length,
         lastText: `${last.sender_id === me ? 'You: ' : ''}${last.text || (last.file_name ? '📎 ' + last.file_name : '')}`,
         time: fmtTime(last.created_at),
         ts: new Date(last.created_at).getTime(),
       }
     }).sort((a, b) => b.ts - a.ts)
-  }, [msgs, usersById, onlineIds, me])
+  }, [msgs, usersById, onlineIds, seenAt, me])
 
   const unreadTotal = useMemo(
     () => msgs.filter(m => m.recipient_id === me && !m.read_at).length,
