@@ -13,14 +13,20 @@ export const examPassed = result => (result?.pct ?? 0) >= PASS_PCT
 export function sessionCompletion(course, { results = {}, submissions = {}, videoProg = {}, tasks = {}, sessionVideos = {} }) {
   const courseTasks = tasks[course.id] || []
   const courseVideos = sessionVideos[course.id] || []
+  const hasVideos = courseVideos.length > 0
+  const hasTasks = courseTasks.length > 0
   // Done when every uploaded video for the session has been watched to the end.
-  const videoDone = !course.hasVideo || courseVideos.length === 0 || courseVideos.every(v => videoProg[v.id]?.completed)
-  const taskDone = courseTasks.length === 0 || courseTasks.every(t => submissions[t.id])
+  const videoDone = !hasVideos || courseVideos.every(v => videoProg[v.id]?.completed)
+  const taskDone = !hasTasks || courseTasks.every(t => submissions[t.id])
   const preDone = examPassed(results[`${course.id}-pre`])
   const postDone = examPassed(results[`${course.id}-post`])
-  const items = [videoDone, taskDone, preDone, postDone]
+  // Only count requirements that actually exist for this session — otherwise a
+  // session with no video/tasks would look "half done" before anyone starts it.
+  const items = [preDone, postDone]
+  if (hasVideos) items.push(videoDone)
+  if (hasTasks) items.push(taskDone)
   const done = items.filter(Boolean).length
-  const pct = Math.round((done / items.length) * 100)
+  const pct = items.length ? Math.round((done / items.length) * 100) : 0
   const status = done === items.length ? 'completed' : done > 0 ? 'in_progress' : 'not_started'
   return { videoDone, taskDone, preDone, postDone, done, pct, status }
 }

@@ -1,0 +1,304 @@
+-- ============================================================================
+-- DAR Online CapDev — full database schema
+-- Paste this whole file into the NEW Supabase project's SQL Editor and Run.
+-- Video files live in Cloudflare R2; only their URLs are stored here.
+-- ============================================================================
+
+-- ---------- Role helpers (SECURITY DEFINER avoids RLS recursion) ----------
+-- plpgsql (not sql) so the body is resolved at call time — the profiles table
+-- is created further down, after these functions.
+create or replace function public.is_staff()
+returns boolean language plpgsql stable security definer set search_path = public as $$
+begin
+  return exists (select 1 from public.profiles
+                 where id = auth.uid() and role in ('admin','superadmin'));
+end; $$;
+
+create or replace function public.is_superadmin()
+returns boolean language plpgsql stable security definer set search_path = public as $$
+begin
+  return exists (select 1 from public.profiles
+                 where id = auth.uid() and role = 'superadmin');
+end; $$;
+
+-- ---------- profiles ----------
+create table if not exists public.profiles (
+  id           uuid primary key references auth.users(id) on delete cascade,
+  name         text,
+  email        text,
+  division     text,
+  position     text,
+  role         text not null default 'employee',   -- employee | admin | superadmin
+  admin_status text not null default 'none',        -- none | pending | approved | rejected
+  joined       date default current_date,
+  created_at   timestamptz not null default now()
+);
+alter table public.profiles enable row level security;
+create policy "profiles readable by signed-in users"
+  on public.profiles for select to authenticated using (true);
+create policy "users update own profile"
+  on public.profiles for update to authenticated
+  using (id = auth.uid()) with check (id = auth.uid());
+create policy "superadmin updates any profile"
+  on public.profiles for update to authenticated
+  using (public.is_superadmin()) with check (public.is_superadmin());
+
+-- Auto-create a profile row whenever a new auth user signs up.
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, email) values (new.id, new.email)
+  on conflict (id) do nothing;
+  return new;
+end; $$;
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users for each row execute function public.handle_new_user();
+
+-- ---------- exam_questions ----------
+create table if not exists public.exam_questions (
+  id         bigint generated always as identity primary key,
+  course_id  int  not null,
+  type       text not null,                 -- 'pre' | 'post'
+  question   text not null,
+  choices    jsonb not null default '[]',
+  answer     int  not null default 0,
+  created_at timestamptz not null default now()
+);
+alter table public.exam_questions enable row level security;
+create policy "questions readable by signed-in users"
+  on public.exam_questions for select to authenticated using (true);
+create policy "staff manage questions"
+  on public.exam_questions for all to authenticated
+  using (public.is_staff()) with check (public.is_staff());
+
+-- ---------- exam_results ----------
+create table if not exists public.exam_results (
+  id        bigint generated always as identity primary key,
+  user_id   uuid not null references auth.users(id) on delete cascade,
+  course_id int  not null,
+  type      text not null,                  -- 'pre' | 'post'
+  score     int  not null default 0,
+  total     int  not null default 0,
+  pct       int  not null default 0,
+  answers   jsonb,
+  taken_at  timestamptz not null default now(),
+  unique (user_id, course_id, type)
+);
+alter table public.exam_results enable row level security;
+create policy "users manage own results"
+  on public.exam_results for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "staff read all results"
+  on public.exam_results for select to authenticated using (public.is_staff());
+
+-- ---------- tasks ----------
+create table if not exists public.tasks (
+  id           bigint generated always as identity primary key,
+  course_id    int not null,
+  title        text,
+  description  text,
+  instructions text,
+  created_at   timestamptz not null default now()
+);
+alter table public.tasks enable row level security;
+create policy "tasks readable by signed-in users"
+  on public.tasks for select to authenticated using (true);
+create policy "staff manage tasks"
+  on public.tasks for all to authenticated
+  using (public.is_staff()) with check (public.is_staff());
+
+-- ---------- task_submissions ----------
+create table if not exists public.task_submissions (
+  id           bigint generated always as identity primary key,
+  user_id      uuid   not null references auth.users(id) on delete cascade,
+  task_id      bigint not null references public.tasks(id) on delete cascade,
+  file_name    text,
+  file_path    text,
+  submitted_at timestamptz not null default now(),
+  unique (user_id, task_id)
+);
+alter table public.task_submissions enable row level security;
+create policy "users manage own submissions"
+  on public.task_submissions for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "staff read all submissions"
+  on public.task_submissions for select to authenticated using (public.is_staff());
+
+-- ---------- session_videos (url = Cloudflare R2 link; course_id 0 = welcome) ----------
+create table if not exists public.session_videos (
+  id         bigint generated always as identity primary key,
+  course_id  int  not null,
+  url        text not null,
+  title      text,
+  created_at timestamptz not null default now()
+);
+alter table public.session_videos enable row level security;
+create policy "videos readable by signed-in users"
+  on public.session_videos for select to authenticated using (true);
+create policy "staff manage videos"
+  on public.session_videos for all to authenticated
+  using (public.is_staff()) with check (public.is_staff());
+
+-- ---------- video_completions ----------
+create table if not exists public.video_completions (
+  id           bigint generated always as identity primary key,
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  course_id    int,
+  video_id     bigint,
+  position     numeric default 0,
+  completed    boolean default false,
+  completed_at timestamptz,
+  unique (user_id, video_id)
+);
+alter table public.video_completions enable row level security;
+create policy "users manage own video progress"
+  on public.video_completions for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "staff read all video progress"
+  on public.video_completions for select to authenticated using (public.is_staff());
+
+-- ---------- session_materials ----------
+create table if not exists public.session_materials (
+  id         bigint generated always as identity primary key,
+  course_id  int not null,
+  title      text,
+  file_name  text,
+  url        text,
+  created_at timestamptz not null default now()
+);
+alter table public.session_materials enable row level security;
+create policy "materials readable by signed-in users"
+  on public.session_materials for select to authenticated using (true);
+create policy "staff manage materials"
+  on public.session_materials for all to authenticated
+  using (public.is_staff()) with check (public.is_staff());
+
+-- ---------- announcements ----------
+create table if not exists public.announcements (
+  id         bigint generated always as identity primary key,
+  title      text,
+  content    text,
+  author     text,
+  created_at timestamptz not null default now()
+);
+alter table public.announcements enable row level security;
+create policy "announcements readable by signed-in users"
+  on public.announcements for select to authenticated using (true);
+create policy "staff manage announcements"
+  on public.announcements for all to authenticated
+  using (public.is_staff()) with check (public.is_staff());
+
+-- ---------- messages ----------
+create table if not exists public.messages (
+  id           bigint generated always as identity primary key,
+  sender_id    uuid not null references auth.users(id) on delete cascade,
+  recipient_id uuid not null references auth.users(id) on delete cascade,
+  text         text,
+  file_url     text,
+  file_name    text,
+  created_at   timestamptz not null default now(),
+  read_at      timestamptz
+);
+alter table public.messages enable row level security;
+create policy "read my messages"
+  on public.messages for select to authenticated
+  using (sender_id = auth.uid() or recipient_id = auth.uid());
+create policy "send messages as me"
+  on public.messages for insert to authenticated with check (sender_id = auth.uid());
+create policy "recipient marks read"
+  on public.messages for update to authenticated
+  using (recipient_id = auth.uid()) with check (recipient_id = auth.uid());
+create policy "sender deletes own message"
+  on public.messages for delete to authenticated using (sender_id = auth.uid());
+
+-- ---------- message_reactions ----------
+create table if not exists public.message_reactions (
+  id         bigint generated always as identity primary key,
+  message_id bigint not null references public.messages(id) on delete cascade,
+  user_id    uuid   not null references auth.users(id) on delete cascade,
+  emoji      text   not null,
+  created_at timestamptz not null default now()
+);
+alter table public.message_reactions enable row level security;
+create policy "read reactions on my messages"
+  on public.message_reactions for select to authenticated
+  using (exists (select 1 from public.messages m
+                 where m.id = message_id
+                   and (m.sender_id = auth.uid() or m.recipient_id = auth.uid())));
+create policy "add my reactions"
+  on public.message_reactions for insert to authenticated with check (user_id = auth.uid());
+create policy "remove my reactions"
+  on public.message_reactions for delete to authenticated using (user_id = auth.uid());
+
+-- ---------- bookings ----------
+create table if not exists public.bookings (
+  id          bigint generated always as identity primary key,
+  employee_id uuid not null references auth.users(id) on delete cascade,
+  admin_id    uuid not null references auth.users(id) on delete cascade,
+  meet_date   date not null,
+  slot        text not null,
+  created_at  timestamptz not null default now()
+);
+alter table public.bookings enable row level security;
+create policy "employee creates own booking"
+  on public.bookings for insert to authenticated with check (employee_id = auth.uid());
+create policy "see bookings i am part of"
+  on public.bookings for select to authenticated
+  using (employee_id = auth.uid() or admin_id = auth.uid());
+
+-- Lets an employee see which slots are taken without exposing who booked them.
+create or replace function public.booked_slots(p_admin uuid, p_date date)
+returns setof text language sql stable security definer set search_path = public as $$
+  select slot from public.bookings where admin_id = p_admin and meet_date = p_date;
+$$;
+grant execute on function public.booked_slots(uuid, date) to authenticated;
+
+-- ---------- meeting_availability ----------
+create table if not exists public.meeting_availability (
+  user_id    uuid primary key references auth.users(id) on delete cascade,
+  weekdays   int[]  not null default '{}',
+  slots      text[] not null default '{}',
+  updated_at timestamptz not null default now()
+);
+alter table public.meeting_availability enable row level security;
+create policy "availability readable by signed-in users"
+  on public.meeting_availability for select to authenticated using (true);
+create policy "admin manages own availability"
+  on public.meeting_availability for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ---------- Realtime (messages live-update) ----------
+alter publication supabase_realtime add table public.messages;
+alter publication supabase_realtime add table public.message_reactions;
+
+-- ---------- Storage buckets (videos go to R2, so not here) ----------
+insert into storage.buckets (id, name, public) values
+  ('materials',     'materials',     true),
+  ('task-files',    'task-files',    false),
+  ('message-files', 'message-files', true)
+on conflict (id) do nothing;
+
+-- materials: public read, staff write
+create policy "materials public read"  on storage.objects for select using (bucket_id = 'materials');
+create policy "materials staff insert" on storage.objects for insert to authenticated with check (bucket_id='materials' and public.is_staff());
+create policy "materials staff update" on storage.objects for update to authenticated using (bucket_id='materials' and public.is_staff());
+create policy "materials staff delete" on storage.objects for delete to authenticated using (bucket_id='materials' and public.is_staff());
+
+-- task-files: each user manages their own folder; staff can read all
+create policy "taskfiles owner insert" on storage.objects for insert to authenticated
+  with check (bucket_id='task-files' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "taskfiles owner select" on storage.objects for select to authenticated
+  using (bucket_id='task-files' and ((storage.foldername(name))[1] = auth.uid()::text or public.is_staff()));
+create policy "taskfiles owner delete" on storage.objects for delete to authenticated
+  using (bucket_id='task-files' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- message-files: public read, any signed-in user can upload
+create policy "msgfiles public read" on storage.objects for select using (bucket_id = 'message-files');
+create policy "msgfiles auth insert" on storage.objects for insert to authenticated with check (bucket_id='message-files');
+
+-- ============================================================================
+-- AFTER you create your owner account in the app, make it the superadmin:
+--   update public.profiles set role='superadmin', admin_status='approved'
+--   where id = (select id from auth.users where email = 'YOUR_EMAIL_HERE');
+-- ============================================================================
