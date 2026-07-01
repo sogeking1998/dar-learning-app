@@ -5,6 +5,7 @@ import { ArrowRight, CheckCircle2, PlayCircle, Filter, RotateCcw } from 'lucide-
 import { MOCK_COURSES } from '../mockData'
 import { useUser } from '../UserContext'
 import { sessionCompletion, useUserProgress } from '../completion'
+import { getQuestionCounts } from '../examStore'
 import { getSessionDurations, formatVideoDuration } from '../videoStore'
 import './MyCourses.css'
 
@@ -17,6 +18,7 @@ export default function MyCourses() {
   const [courses, setCourses] = useState(MOCK_COURSES)
   const [filter, setFilter]   = useState('All')
   const [durations, setDurations] = useState({})  // { course_id: totalVideoSeconds }
+  const [qCounts, setQCounts] = useState({})      // { `${course_id}-${type}`: questionCount }
   const nav = useNavigate()
   const { user } = useUser()
   const progress = useUserProgress(user?.id)
@@ -26,6 +28,7 @@ export default function MyCourses() {
   }, [])
 
   useEffect(() => { getSessionDurations().then(setDurations) }, [])
+  useEffect(() => { getQuestionCounts().then(setQCounts) }, [])
 
   const openInBrowse = course =>
     nav('/courses/browse', { state: { division: course.division, courseId: course.id } })
@@ -102,10 +105,10 @@ export default function MyCourses() {
 
               <div className="mc-tests">
                 <div className={`test-pill ${course.comp.preDone ? 'tp-done' : 'tp-pending'}`}>
-                  Pre-Test {course.comp.preDone ? '✓' : `(${course.preTest.questions}Q)`}
+                  Pre-Test {course.comp.preDone ? '✓' : `(${qCounts[`${course.id}-pre`] ?? course.preTest.questions}Q)`}
                 </div>
                 <div className={`test-pill ${course.comp.postDone ? 'tp-done' : 'tp-pending'}`}>
-                  Post-Test {course.comp.postDone ? '✓' : `(${course.postTest.questions}Q)`}
+                  Post-Test {course.comp.postDone ? '✓' : `(${qCounts[`${course.id}-post`] ?? course.postTest.questions}Q)`}
                 </div>
               </div>
 

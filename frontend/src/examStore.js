@@ -43,6 +43,20 @@ export function makeQuestion() {
   return { text: '', choices: ['', '', '', ''], answer: 0 }
 }
 
+// How many questions each session/type actually has → { `${course_id}-${type}`: count }.
+export async function getQuestionCounts() {
+  const { data, error } = await supabase
+    .from('exam_questions')
+    .select('course_id, type')
+  if (error) { console.error('Load question counts failed:', error.message); return {} }
+  const map = {}
+  for (const q of data || []) {
+    const k = `${q.course_id}-${q.type}`
+    map[k] = (map[k] || 0) + 1
+  }
+  return map
+}
+
 // ── Results ──
 // Returns a map keyed `${course_id}-${type}` for one user.
 export async function getResultsForUser(userId) {
