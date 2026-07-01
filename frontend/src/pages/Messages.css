@@ -138,6 +138,8 @@
 .msg-convo-name { font-size: 13.5px; font-weight: 700; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .msg-convo-time { font-size: 11px; color: var(--t4); flex-shrink: 0; }
 .msg-convo-bottom { display: flex; align-items: center; gap: 8px; }
+.msg-convo-presence { display: block; margin-top: 3px; font-size: 11px; color: var(--t4); }
+.msg-convo-presence.on { color: var(--g600); font-weight: 600; }
 .msg-convo-preview {
   flex: 1; min-width: 0;
   font-size: 12.5px; color: var(--t3);

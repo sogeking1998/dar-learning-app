@@ -77,6 +77,18 @@ export function MessagesProvider({ children }) {
     return () => { supabase.removeChannel(channel) }
   }, [me])
 
+  // When the online set changes (someone connects/disconnects), refresh
+  // everyone's last_seen so a user who just went offline immediately reads
+  // "Online X ago" instead of stale/empty data.
+  useEffect(() => {
+    if (!me) return
+    supabase.from('profiles').select('id, last_seen').neq('id', me).then(({ data }) => {
+      if (!data) return
+      const seen = Object.fromEntries(data.map(p => [p.id, p.last_seen]))
+      setDirectory(prev => prev.map(u => ({ ...u, lastSeen: seen[u.id] ?? u.lastSeen })))
+    })
+  }, [onlineIds, me])
+
   // Load my message history + subscribe to new incoming messages live.
   useEffect(() => {
     if (!me) return

@@ -193,6 +193,9 @@ export default function Messages() {
                       <span className="msg-convo-preview">{c.lastText}</span>
                       {c.unread > 0 && <span className="msg-unread">{c.unread}</span>}
                     </div>
+                    <span className={`msg-convo-presence${c.online ? ' on' : ''}`}>
+                      {presenceLabel(c.online, c.lastSeen)}
+                    </span>
                   </div>
                 </button>
               ))}
