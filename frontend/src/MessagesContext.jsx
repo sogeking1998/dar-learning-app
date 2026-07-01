@@ -36,19 +36,33 @@ export function MessagesProvider({ children }) {
   useEffect(() => {
     if (!me) return
     let active = true
-    supabase
+    const load = () => supabase
       .from('profiles')
-      .select('id, name, division, position, role')
+      .select('id, name, division, position, role, last_seen')
       .neq('id', me)
       .then(({ data, error }) => {
         if (error) { console.error('Load directory failed:', error.message); return }
         if (!active) return
         setDirectory((data || [])
           .filter(p => p.name && p.role !== 'superadmin')   // onboarded users, no super admin
-          .map(p => ({ id: p.id, name: p.name, role: roleLabel(p), accountRole: p.role, color: colorFor(p.id) }))
+          .map(p => ({ id: p.id, name: p.name, role: roleLabel(p), accountRole: p.role, color: colorFor(p.id), lastSeen: p.last_seen }))
           .sort((a, b) => a.name.localeCompare(b.name)))
       })
-    return () => { active = false }
+    load()
+    // Refresh the directory periodically so "last seen" times stay current.
+    const t = setInterval(load, 60_000)
+    return () => { active = false; clearInterval(t) }
+  }, [me])
+
+  // Heartbeat: keep my own last_seen fresh so others see "Online X ago".
+  useEffect(() => {
+    if (!me) return
+    const beat = () => supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', me)
+    beat()
+    const t = setInterval(beat, 60_000)
+    const onVis = () => { if (document.visibilityState === 'visible') beat() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', onVis) }
   }, [me])
 
   // Realtime presence: who is actually online right now.
@@ -130,6 +144,7 @@ export function MessagesProvider({ children }) {
         accountRole: u.accountRole || null,
         color: u.color || colorFor(otherId),
         online: onlineIds.includes(String(otherId)),
+        lastSeen: u.lastSeen || null,
         unread: list.filter(m => m.recipient_id === me && !m.read_at).length,
         lastText: `${last.sender_id === me ? 'You: ' : ''}${last.text || (last.file_name ? '📎 ' + last.file_name : '')}`,
         time: fmtTime(last.created_at),
@@ -214,3 +229,16 @@ export function MessagesProvider({ children }) {
 }
 
 export const useMessages = () => useContext(MessagesContext)
+
+// "Online", "Online 5 mins ago", "Online 2 hrs ago", or "Offline".
+export function presenceLabel(online, lastSeen) {
+  if (online) return 'Online'
+  if (!lastSeen) return 'Offline'
+  const mins = Math.floor((Date.now() - new Date(lastSeen).getTime()) / 60000)
+  if (mins < 1) return 'Online moments ago'
+  if (mins < 60) return `Online ${mins} min${mins === 1 ? '' : 's'} ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `Online ${hrs} hr${hrs === 1 ? '' : 's'} ago`
+  const days = Math.floor(hrs / 24)
+  return `Online ${days} day${days === 1 ? '' : 's'} ago`
+}

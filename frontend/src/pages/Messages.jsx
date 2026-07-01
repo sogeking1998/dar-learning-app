@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Search, Send, ArrowLeft, Phone, Video, CalendarPlus, MessageSquare, Users, Paperclip, Smile, FileText, X, Trash2 } from 'lucide-react'
 import { initials } from '../UserContext'
 import { useAuth } from '../AuthContext'
-import { useMessages, EMOJIS, REACTIONS } from '../MessagesContext'
+import { useMessages, presenceLabel, EMOJIS, REACTIONS } from '../MessagesContext'
 import { NotoEmoji, renderEmoji } from '../emoji'
 import { getAvailability, createBooking, DEFAULT_WEEKDAYS, DEFAULT_SLOTS } from '../calendarStore'
 import BookingModal from '../components/BookingModal'
@@ -31,6 +31,13 @@ export default function Messages() {
   const fileRef = useRef(null)
   const pressRef = useRef(null)
   const { start: startCallEngine } = useCall()
+
+  // Re-render every minute so "Online X mins ago" labels stay current.
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setTick(x => x + 1), 60_000)
+    return () => clearInterval(t)
+  }, [])
 
   // Stage the picked file (don't send yet) so it can be reviewed/removed.
   const onPickFile = e => {
@@ -211,7 +218,7 @@ export default function Messages() {
                     <span className="msg-person-role">{u.role}</span>
                   </div>
                   <span className={`msg-presence${u.online ? ' on' : ''}`}>
-                    <span className="msg-presence-dot" />{u.online ? 'Active' : 'Offline'}
+                    <span className="msg-presence-dot" />{presenceLabel(u.online, u.lastSeen)}
                   </span>
                 </button>
               ))}
@@ -241,7 +248,9 @@ export default function Messages() {
                 <div className="msg-thread-info">
                   <span className="msg-thread-name">{active.name}</span>
                   <span className="msg-thread-status">
-                    {active.online ? <><span className="status-dot" /> Active now</> : active.role}
+                    {active.online
+                      ? <><span className="status-dot" /> Online now</>
+                      : (active.lastSeen ? presenceLabel(false, active.lastSeen) : active.role)}
                   </span>
                 </div>
                 <div className="msg-thread-actions">

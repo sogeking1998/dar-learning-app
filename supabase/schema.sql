@@ -31,6 +31,7 @@ create table if not exists public.profiles (
   role         text not null default 'employee',   -- employee | admin | superadmin
   admin_status text not null default 'none',        -- none | pending | approved | rejected
   joined       date default current_date,
+  last_seen    timestamptz,                          -- updated by the app heartbeat for presence
   created_at   timestamptz not null default now()
 );
 alter table public.profiles enable row level security;
