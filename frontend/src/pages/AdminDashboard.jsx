@@ -11,6 +11,7 @@ import { getAdminBookings } from '../calendarStore'
 import { MOCK_EMPLOYEES } from '../mockData'
 import DarLogo from '../components/DarLogo'
 import ConfirmModal from '../components/ConfirmModal'
+import AdminCourses from './AdminCourses'
 import AdminExams from './AdminExams'
 import AdminTasks from './AdminTasks'
 import AdminVideo from './AdminVideo'
@@ -26,6 +27,7 @@ const DIVISIONS = ['PBD', 'LTS', 'AJD', 'Admin']
 const NAV = [
   { id: 'dashboard',     label: 'Dashboard',       icon: LayoutDashboard },
   { id: 'analytics',     label: 'Analytics',        icon: LineChart },
+  { id: 'courses',       label: 'Session Management', icon: BookOpen },
   { id: 'exams',         label: 'Exam Management',  icon: FileQuestion },
   { id: 'tasks',         label: 'Task Management',  icon: ClipboardList },
   { id: 'video',         label: 'Upload Video',     icon: Film },
@@ -134,6 +136,7 @@ function AdminConsole() {
         <div className="admin-content">
           {view === 'dashboard' && <Overview onNavigate={setView} />}
           {view === 'analytics' && <AdminAnalytics />}
+          {view === 'courses' && <AdminCourses />}
           {view === 'exams' && <AdminExams />}
           {view === 'tasks' && <AdminTasks />}
           {view === 'video' && <AdminVideo />}

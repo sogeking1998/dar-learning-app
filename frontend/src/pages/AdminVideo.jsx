@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { UploadCloud, Film, Trash2, Plus, RefreshCw } from 'lucide-react'
-import { MOCK_COURSES } from '../mockData'
+import { useCourses } from '../courseStore'
 import {
   getSessionVideosForCourse, addSessionVideo, replaceSessionVideo, deleteSessionVideoById,
   getWelcomeVideo, setWelcomeVideo, deleteWelcomeVideo,
@@ -58,7 +58,8 @@ export default function AdminVideo() {
     loadWelcome()
   }
 
-  const divCourses = MOCK_COURSES.filter(c => c.division === division).sort((a, b) => a.session - b.session)
+  const { courses: allCourses } = useCourses()
+  const divCourses = allCourses.filter(c => c.division === division).sort((a, b) => a.session - b.session)
 
   useEffect(() => {
     if (!divCourses.find(c => c.id === courseId)) setCourseId(divCourses[0]?.id ?? null)

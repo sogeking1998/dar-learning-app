@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import axios from 'axios'
 import {
   PlayCircle, FileText, Download, CheckCircle2,
   ClipboardList, BookOpen, ChevronDown, ChevronUp, Lock, ExternalLink
 } from 'lucide-react'
-import { MOCK_COURSES } from '../mockData'
+import { useCourses } from '../courseStore'
 import { useUser } from '../UserContext'
 import { getResultsForUser } from '../examStore'
 import { getTasksMap, getSubmissionsForUser } from '../taskStore'
@@ -67,7 +66,7 @@ export default function BrowseCourses() {
   const target = location.state || {}
   const { user } = useUser()
   const userId = user?.id
-  const [courses, setCourses] = useState(MOCK_COURSES)
+  const { courses } = useCourses()
   const [activeDiv, setActiveDiv] = useState(target.division || 'PBD')
   const [expanded, setExpanded] = useState({})
   const [highlightId, setHighlightId] = useState(target.courseId || null)
@@ -95,12 +94,6 @@ export default function BrowseCourses() {
   const loadResults = () => {
     if (userId) getResultsForUser(userId).then(setResults)
   }
-
-  useEffect(() => {
-    axios.get('/api/courses')
-      .then(r => { if (Array.isArray(r.data)) setCourses(r.data) })
-      .catch(() => {})
-  }, [])
 
   useEffect(() => { loadResults() }, [userId]) // eslint-disable-line
   useEffect(() => { loadSubs() }, [userId]) // eslint-disable-line

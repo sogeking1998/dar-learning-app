@@ -3,17 +3,18 @@ import {
   ClipboardList, CheckCircle2, TrendingUp, TrendingDown, Target,
   ArrowUp, MoreVertical, Sparkles,
 } from 'lucide-react'
-import { MOCK_COURSES } from '../mockData'
+import { useCourses } from '../courseStore'
 import './AdminAnalytics.css'
 
 const DIVISIONS = ['PBD', 'LTS', 'AJD', 'Admin']
 const GREEN = '#22e07b'
 
-const MODULES = MOCK_COURSES.map(c => {
+// Demo pre/post score bands derived from the course id (until real analytics).
+const toModule = c => {
   const pre = 42 + (c.id * 7) % 26
   const post = Math.min(97, pre + 12 + (c.id * 5) % 22)
   return { id: c.id, code: c.code, session: c.session, division: c.division, title: c.shortTitle || c.title, pre, post }
-})
+}
 
 const band = v => (v >= 80 ? 'an-good' : v >= 60 ? 'an-mid' : 'an-low')
 
@@ -106,16 +107,18 @@ const Menu = () => <button className="sn-menu" aria-label="More"><MoreVertical s
 
 export default function AdminAnalytics() {
   const [division, setDivision] = useState('PBD')
-  const data = MODULES.filter(m => m.division === division).sort((a, b) => a.session - b.session)
+  const { courses } = useCourses()
+  const data = courses.filter(c => c.division === division).map(toModule).sort((a, b) => a.session - b.session)
 
-  const avgPre = Math.round(data.reduce((s, d) => s + d.pre, 0) / data.length)
-  const avgPost = Math.round(data.reduce((s, d) => s + d.post, 0) / data.length)
+  const avgPre = Math.round(data.reduce((s, d) => s + d.pre, 0) / (data.length || 1))
+  const avgPost = Math.round(data.reduce((s, d) => s + d.post, 0) / (data.length || 1))
   const improvement = avgPost - avgPre
   const passCount = data.filter(d => d.post >= 75).length
-  const passRate = Math.round((passCount / data.length) * 100)
+  const passRate = Math.round((passCount / (data.length || 1)) * 100)
 
   const byPost = [...data].sort((a, b) => b.post - a.post)
-  const strongest = byPost[0], weakest = byPost[byPost.length - 1]
+  const fallback = { session: '—', title: 'No sessions', post: 0 }
+  const strongest = byPost[0] || fallback, weakest = byPost[byPost.length - 1] || fallback
 
   return (
     <div className="an-page">

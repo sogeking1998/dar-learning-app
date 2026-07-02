@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, Pencil, Trash2, Check, X, ClipboardList } from 'lucide-react'
-import { MOCK_COURSES } from '../mockData'
+import { useCourses } from '../courseStore'
 import { getTasksForCourse, addTask, updateTask, deleteTask } from '../taskStore'
 import ConfirmModal from '../components/ConfirmModal'
 
@@ -16,7 +16,8 @@ export default function AdminTasks() {
   const [editor, setEditor] = useState(null) // { id?, title, description, instructions }
   const [confirmDel, setConfirmDel] = useState(null)
 
-  const divCourses = MOCK_COURSES
+  const { courses: allCourses } = useCourses()
+  const divCourses = allCourses
     .filter(c => c.division === division)
     .sort((a, b) => a.session - b.session)
 

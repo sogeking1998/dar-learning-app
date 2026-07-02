@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
 import {
   Download, PlayCircle, FileText, Search, FolderDown, ChevronDown, ChevronUp
 } from 'lucide-react'
-import { MOCK_COURSES } from '../mockData'
+import { useCourses } from '../courseStore'
 import { getAllSessionVideos, readVideoDuration } from '../videoStore'
 import { getMaterialsMap } from '../materialsStore'
 import './Resources.css'
@@ -26,7 +25,7 @@ const TYPE_ICON = { video: PlayCircle, docs: FileText }
 const TYPE_CLS = { video: 'rs-video', docs: 'rs-docs' }
 
 export default function Resources() {
-  const [courses, setCourses] = useState(MOCK_COURSES)
+  const { courses } = useCourses()
   const [videos, setVideos] = useState({})         // { course_id: [videos] }
   const [materials, setMaterials] = useState({})   // { course_id: [materials] }
   const [videoDur, setVideoDur] = useState({})     // { video_id: seconds }
@@ -35,7 +34,6 @@ export default function Resources() {
   const [open, setOpen] = useState({})   // { course_id: bool } — collapsed by default
 
   useEffect(() => {
-    axios.get('/api/courses').then(r => { if (Array.isArray(r.data)) setCourses(r.data) }).catch(() => {})
     getMaterialsMap().then(setMaterials)
   }, [])
 

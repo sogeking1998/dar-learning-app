@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import axios from 'axios'
 import {
   PlayCircle, FileText, Download, CheckCircle2, ClipboardList,
   BookOpen, ArrowLeft, Clock, Hash, GraduationCap
 } from 'lucide-react'
-import { MOCK_COURSES } from '../mockData'
+import { getCourses } from '../courseStore'
 import { useUser } from '../UserContext'
 import { getResultsForUser } from '../examStore'
 import { getTasksForCourse, getSubmissionsForUser } from '../taskStore'
@@ -72,18 +71,15 @@ export default function SessionDetail() {
   const loadResults = () => { if (userId) getResultsForUser(userId).then(setResults) }
   const loadVideoProg = () => { if (userId) getVideoProgress(userId).then(setVideoProg) }
 
-  // Resolve the course from the API (fallback to mock data) by id.
+  // Resolve the course by id (DB-backed, hardcoded fallback inside the store).
   useEffect(() => {
     let active = true
-    const pick = list => {
-      const found = (list || []).find(c => String(c.id) === String(courseId))
+    getCourses().then(list => {
       if (!active) return
+      const found = (list || []).find(c => String(c.id) === String(courseId))
       if (found) { setCourse(found); setNotFound(false) }
       else setNotFound(true)
-    }
-    axios.get('/api/courses')
-      .then(r => pick(Array.isArray(r.data) ? r.data : MOCK_COURSES))
-      .catch(() => pick(MOCK_COURSES))
+    })
     return () => { active = false }
   }, [courseId])
 

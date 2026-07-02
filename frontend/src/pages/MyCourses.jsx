@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import { ArrowRight, CheckCircle2, PlayCircle, Filter, RotateCcw } from 'lucide-react'
-import { MOCK_COURSES } from '../mockData'
+import { useCourses } from '../courseStore'
 import { useUser } from '../UserContext'
 import { sessionCompletion, useUserProgress } from '../completion'
 import { getQuestionCounts } from '../examStore'
@@ -15,17 +14,13 @@ const statusMap = { 'All': null, 'In Progress': 'in_progress', 'Completed': 'com
 const HEAD_BG = { PBD: 'hd-pbd', LTS: 'hd-lts', AJD: 'hd-ajd', Admin: 'hd-admin' }
 
 export default function MyCourses() {
-  const [courses, setCourses] = useState(MOCK_COURSES)
+  const { courses } = useCourses()
   const [filter, setFilter]   = useState('All')
   const [durations, setDurations] = useState({})  // { course_id: totalVideoSeconds }
   const [qCounts, setQCounts] = useState({})      // { `${course_id}-${type}`: questionCount }
   const nav = useNavigate()
   const { user } = useUser()
   const progress = useUserProgress(user?.id)
-
-  useEffect(() => {
-    axios.get('/api/courses').then(r => { if (Array.isArray(r.data)) setCourses(r.data) }).catch(() => {})
-  }, [])
 
   useEffect(() => { getSessionDurations().then(setDurations) }, [])
   useEffect(() => { getQuestionCounts().then(setQCounts) }, [])

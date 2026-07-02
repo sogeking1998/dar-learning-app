@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, Pencil, Trash2, Check, X, HelpCircle } from 'lucide-react'
-import { MOCK_COURSES } from '../mockData'
+import { useCourses } from '../courseStore'
 import { getQuestions, addQuestion, updateQuestion, deleteQuestion, makeQuestion } from '../examStore'
 import ConfirmModal from '../components/ConfirmModal'
 
@@ -16,7 +16,8 @@ export default function AdminExams() {
   const [editor, setEditor] = useState(null) // { id?, text, choices[], answer }
   const [confirmDel, setConfirmDel] = useState(null)
 
-  const divCourses = MOCK_COURSES
+  const { courses: allCourses } = useCourses()
+  const divCourses = allCourses
     .filter(c => c.division === division)
     .sort((a, b) => a.session - b.session)
 

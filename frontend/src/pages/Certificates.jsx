@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
+import { useState } from 'react'
 import { Award, Download, Eye, Lock, CheckCircle2, Sprout } from 'lucide-react'
 import { useUser } from '../UserContext'
-import { MOCK_COURSES } from '../mockData'
+import { useCourses } from '../courseStore'
 import { sessionCompletion, useUserProgress } from '../completion'
 import CertificateModal from '../components/CertificateModal'
 import './Certificates.css'
@@ -20,13 +19,9 @@ const fmtDate = d =>
 
 export default function Certificates() {
   const { user } = useUser()
-  const [courses, setCourses] = useState(MOCK_COURSES)
+  const { courses } = useCourses()
   const [preview, setPreview] = useState(null)
   const progress = useUserProgress(user?.id)
-
-  useEffect(() => {
-    axios.get('/api/courses').then(r => { if (Array.isArray(r.data)) setCourses(r.data) }).catch(() => {})
-  }, [])
 
   // Real completion: video + task + pre-test + post-test all done.
   const withComp = courses.map(c => ({ ...c, comp: sessionCompletion(c, progress) }))

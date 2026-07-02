@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { UploadCloud, FileText, Trash2, ExternalLink } from 'lucide-react'
-import { MOCK_COURSES } from '../mockData'
+import { useCourses } from '../courseStore'
 import { getMaterialsForCourse, addMaterial, deleteMaterialById } from '../materialsStore'
 import ConfirmModal from '../components/ConfirmModal'
 
@@ -32,7 +32,8 @@ export default function AdminMaterials() {
   const [error, setError] = useState(null)
   const [confirmDel, setConfirmDel] = useState(null)
 
-  const divCourses = MOCK_COURSES.filter(c => c.division === division).sort((a, b) => a.session - b.session)
+  const { courses: allCourses } = useCourses()
+  const divCourses = allCourses.filter(c => c.division === division).sort((a, b) => a.session - b.session)
 
   useEffect(() => {
     if (!divCourses.find(c => c.id === courseId)) setCourseId(divCourses[0]?.id ?? null)

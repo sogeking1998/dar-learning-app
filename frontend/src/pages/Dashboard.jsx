@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
 import {
   CheckCircle2, Clock, BarChart2, Award, ChevronDown,
   Sprout, ScrollText, Scale, Building2, BookOpen
 } from 'lucide-react'
-import { MOCK_COURSES } from '../mockData'
+import { useCourses } from '../courseStore'
 import { useUser } from '../UserContext'
 import { sessionCompletion, useUserProgress } from '../completion'
 import { getSessionDurations, formatVideoDuration } from '../videoStore'
@@ -44,19 +43,13 @@ function DonutRing({ value }) {
 }
 
 export default function Dashboard() {
-  const [courses, setCourses] = useState(MOCK_COURSES)
+  const { courses } = useCourses()
   const [openDivs, setOpenDivs] = useState({})
   const [durations, setDurations] = useState({})  // { course_id: totalVideoSeconds }
   const { user } = useUser()
   const progress = useUserProgress(user?.id)
 
   const toggleDiv = div => setOpenDivs(prev => ({ ...prev, [div]: !prev[div] }))
-
-  useEffect(() => {
-    axios.get('/api/dashboard')
-      .then(r => { if (Array.isArray(r.data?.courses)) setCourses(r.data.courses) })
-      .catch(() => {})
-  }, [])
 
   useEffect(() => { getSessionDurations().then(setDurations) }, [])
 
