@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  LayoutDashboard, FileQuestion, LineChart, LogOut, Megaphone, ClipboardList, Film, FileDown,
+  LayoutDashboard, LineChart, LogOut, Megaphone,
   Users, BookOpen, BarChart3, Award, ArrowRight, Sparkles, CheckCircle2, MessageSquare, CalendarDays,
   Menu, X,
 } from 'lucide-react'
@@ -12,10 +12,6 @@ import { MOCK_EMPLOYEES } from '../mockData'
 import DarLogo from '../components/DarLogo'
 import ConfirmModal from '../components/ConfirmModal'
 import AdminCourses from './AdminCourses'
-import AdminExams from './AdminExams'
-import AdminTasks from './AdminTasks'
-import AdminVideo from './AdminVideo'
-import AdminMaterials from './AdminMaterials'
 import AdminAnalytics from './AdminAnalytics'
 import AdminAnnouncements from './AdminAnnouncements'
 import AdminCalendar from './AdminCalendar'
@@ -25,13 +21,9 @@ import './AdminDashboard.css'
 const DIVISIONS = ['PBD', 'LTS', 'AJD', 'Admin']
 
 const NAV = [
-  { id: 'dashboard',     label: 'Dashboard',       icon: LayoutDashboard },
+  { id: 'dashboard',     label: 'Dashboard',        icon: LayoutDashboard },
   { id: 'analytics',     label: 'Analytics',        icon: LineChart },
   { id: 'courses',       label: 'Session Management', icon: BookOpen },
-  { id: 'exams',         label: 'Exam Management',  icon: FileQuestion },
-  { id: 'tasks',         label: 'Task Management',  icon: ClipboardList },
-  { id: 'video',         label: 'Upload Video',     icon: Film },
-  { id: 'materials',     label: 'Learning Materials', icon: FileDown },
   { id: 'messages',      label: 'Messages',         icon: MessageSquare },
   { id: 'calendar',      label: 'My Calendar',      icon: CalendarDays },
   { id: 'announcements', label: 'Announcements',    icon: Megaphone },
@@ -137,10 +129,6 @@ function AdminConsole() {
           {view === 'dashboard' && <Overview onNavigate={setView} />}
           {view === 'analytics' && <AdminAnalytics />}
           {view === 'courses' && <AdminCourses />}
-          {view === 'exams' && <AdminExams />}
-          {view === 'tasks' && <AdminTasks />}
-          {view === 'video' && <AdminVideo />}
-          {view === 'materials' && <AdminMaterials />}
           {view === 'messages' && <Messages />}
           {view === 'calendar' && <AdminCalendar />}
           {view === 'announcements' && <AdminAnnouncements />}
@@ -202,8 +190,8 @@ function Overview({ onNavigate }) {
         <div className="dash-banner-text">
           <h2>Welcome back, Admin <Sparkles size={18} /></h2>
           <p>{totalEmployees} employees enrolled · {avgCompletion}% average completion across {byDivision.length} divisions.</p>
-          <button className="dash-banner-btn" onClick={() => onNavigate('exams')}>
-            Manage Exams <ArrowRight size={15} />
+          <button className="dash-banner-btn" onClick={() => onNavigate('courses')}>
+            Manage Sessions <ArrowRight size={15} />
           </button>
         </div>
         <svg className="dash-banner-art" viewBox="0 0 200 130" aria-hidden="true">
@@ -252,9 +240,9 @@ function Overview({ onNavigate }) {
             <div><h2 className="dash-card-title">Quick Actions</h2><p className="dash-card-sub">Jump to a task</p></div>
           </div>
           <div className="dash-card-body dash-actions">
-            <button className="dash-action" onClick={() => onNavigate('exams')}>
-              <span className="dash-ic dt-green"><FileQuestion size={18} /></span>
-              <span className="dash-action-text"><b>Manage Exams</b><small>Add or edit questions</small></span>
+            <button className="dash-action" onClick={() => onNavigate('courses')}>
+              <span className="dash-ic dt-green"><BookOpen size={18} /></span>
+              <span className="dash-action-text"><b>Manage Sessions</b><small>Content, exams & tasks</small></span>
               <ArrowRight size={16} />
             </button>
             <button className="dash-action" onClick={() => onNavigate('analytics')}>

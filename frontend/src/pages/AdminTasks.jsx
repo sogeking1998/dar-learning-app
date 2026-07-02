@@ -7,9 +7,11 @@ import ConfirmModal from '../components/ConfirmModal'
 const DIVISIONS = ['PBD', 'LTS', 'AJD', 'Admin']
 const blank = () => ({ title: '', description: '', instructions: '' })
 
-export default function AdminTasks() {
+export default function AdminTasks({ courseId: propCourseId }) {
+  const embedded = propCourseId != null
   const [division, setDivision] = useState('PBD')
-  const [courseId, setCourseId] = useState(null)
+  const [localCourseId, setCourseId] = useState(null)
+  const courseId = embedded ? propCourseId : localCourseId
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -22,7 +24,8 @@ export default function AdminTasks() {
     .sort((a, b) => a.session - b.session)
 
   useEffect(() => {
-    if (!divCourses.find(c => c.id === courseId)) {
+    if (embedded) return
+    if (!divCourses.find(c => c.id === localCourseId)) {
       setCourseId(divCourses[0]?.id ?? null)
     }
   }, [division]) // eslint-disable-line
@@ -35,7 +38,7 @@ export default function AdminTasks() {
   }
   useEffect(() => { load(); setEditor(null) }, [courseId]) // eslint-disable-line
 
-  const course = divCourses.find(c => c.id === courseId)
+  const course = allCourses.find(c => c.id === courseId)
 
   const startAdd = () => setEditor(blank())
   const startEdit = t => setEditor({ id: t.id, title: t.title, description: t.description || '', instructions: t.instructions || '' })
@@ -66,28 +69,34 @@ export default function AdminTasks() {
   }
 
   return (
-    <div className="ax-wrap">
-      <div className="admin-head">
-        <h1 className="admin-title">Task Management</h1>
-        <p className="admin-sub">Add and edit the activity each session requires</p>
-      </div>
+    <div className={embedded ? '' : 'ax-wrap'}>
+      {!embedded && (
+        <div className="admin-head">
+          <h1 className="admin-title">Task Management</h1>
+          <p className="admin-sub">Add and edit the activity each session requires</p>
+        </div>
+      )}
 
-      <div className="ax-tabs">
-        {DIVISIONS.map(d => (
-          <button key={d} className={`ax-tab${division === d ? ' active' : ''}`} onClick={() => setDivision(d)}>{d}</button>
-        ))}
-      </div>
+      {!embedded && (
+        <div className="ax-tabs">
+          {DIVISIONS.map(d => (
+            <button key={d} className={`ax-tab${division === d ? ' active' : ''}`} onClick={() => setDivision(d)}>{d}</button>
+          ))}
+        </div>
+      )}
 
-      <div className="ax-controls">
-        <label className="ax-control">
-          <span>Session</span>
-          <select value={courseId ?? ''} onChange={e => setCourseId(Number(e.target.value))}>
-            {divCourses.map(c => (
-              <option key={c.id} value={c.id}>Session {c.session} — {c.title}</option>
-            ))}
-          </select>
-        </label>
-      </div>
+      {!embedded && (
+        <div className="ax-controls">
+          <label className="ax-control">
+            <span>Session</span>
+            <select value={courseId ?? ''} onChange={e => setCourseId(Number(e.target.value))}>
+              {divCourses.map(c => (
+                <option key={c.id} value={c.id}>Session {c.session} — {c.title}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
 
       <div className="ax-list-hd">
         <h2 className="ax-list-title">

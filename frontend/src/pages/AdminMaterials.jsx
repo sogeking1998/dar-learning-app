@@ -20,9 +20,11 @@ const badgeClass = ext => {
   return 'mf-other'
 }
 
-export default function AdminMaterials() {
+export default function AdminMaterials({ courseId: propCourseId }) {
+  const embedded = propCourseId != null
   const [division, setDivision] = useState('PBD')
-  const [courseId, setCourseId] = useState(null)
+  const [localCourseId, setCourseId] = useState(null)
+  const courseId = embedded ? propCourseId : localCourseId
   const [materials, setMaterials] = useState([])
   const [loading, setLoading] = useState(false)
   const [files, setFiles] = useState([])
@@ -36,7 +38,8 @@ export default function AdminMaterials() {
   const divCourses = allCourses.filter(c => c.division === division).sort((a, b) => a.session - b.session)
 
   useEffect(() => {
-    if (!divCourses.find(c => c.id === courseId)) setCourseId(divCourses[0]?.id ?? null)
+    if (embedded) return
+    if (!divCourses.find(c => c.id === localCourseId)) setCourseId(divCourses[0]?.id ?? null)
   }, [division]) // eslint-disable-line
 
   const load = async () => {
@@ -48,7 +51,7 @@ export default function AdminMaterials() {
   }
   useEffect(() => { load() }, [courseId]) // eslint-disable-line
 
-  const course = divCourses.find(c => c.id === courseId)
+  const course = allCourses.find(c => c.id === courseId)
 
   const pick = e => {
     const list = Array.from(e.target.files || [])
@@ -86,28 +89,34 @@ export default function AdminMaterials() {
   }
 
   return (
-    <div className="ax-wrap">
-      <div className="admin-head">
-        <h1 className="admin-title">Learning Materials</h1>
-        <p className="admin-sub">Upload one or more downloadable files for each session</p>
-      </div>
+    <div className={embedded ? '' : 'ax-wrap'}>
+      {!embedded && (
+        <div className="admin-head">
+          <h1 className="admin-title">Learning Materials</h1>
+          <p className="admin-sub">Upload one or more downloadable files for each session</p>
+        </div>
+      )}
 
-      <div className="ax-tabs">
-        {DIVISIONS.map(d => (
-          <button key={d} className={`ax-tab${division === d ? ' active' : ''}`} onClick={() => setDivision(d)}>{d}</button>
-        ))}
-      </div>
+      {!embedded && (
+        <div className="ax-tabs">
+          {DIVISIONS.map(d => (
+            <button key={d} className={`ax-tab${division === d ? ' active' : ''}`} onClick={() => setDivision(d)}>{d}</button>
+          ))}
+        </div>
+      )}
 
-      <div className="ax-controls">
-        <label className="ax-control">
-          <span>Session</span>
-          <select value={courseId ?? ''} onChange={e => setCourseId(Number(e.target.value))}>
-            {divCourses.map(c => (
-              <option key={c.id} value={c.id}>Session {c.session} — {c.title}</option>
-            ))}
-          </select>
-        </label>
-      </div>
+      {!embedded && (
+        <div className="ax-controls">
+          <label className="ax-control">
+            <span>Session</span>
+            <select value={courseId ?? ''} onChange={e => setCourseId(Number(e.target.value))}>
+              {divCourses.map(c => (
+                <option key={c.id} value={c.id}>Session {c.session} — {c.title}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
 
       <div className="vid-admin">
         <div className="vid-admin-head">

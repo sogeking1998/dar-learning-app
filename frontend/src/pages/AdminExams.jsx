@@ -6,9 +6,11 @@ import ConfirmModal from '../components/ConfirmModal'
 
 const DIVISIONS = ['PBD', 'LTS', 'AJD', 'Admin']
 
-export default function AdminExams() {
+export default function AdminExams({ courseId: propCourseId }) {
+  const embedded = propCourseId != null
   const [division, setDivision] = useState('PBD')
-  const [courseId, setCourseId] = useState(null)
+  const [localCourseId, setCourseId] = useState(null)
+  const courseId = embedded ? propCourseId : localCourseId
   const [type, setType] = useState('pre')
   const [questions, setQuestions] = useState([])
   const [loading, setLoading] = useState(false)
@@ -21,9 +23,10 @@ export default function AdminExams() {
     .filter(c => c.division === division)
     .sort((a, b) => a.session - b.session)
 
-  // Keep a valid course selected when the division changes.
+  // Keep a valid course selected when the division changes (standalone mode only).
   useEffect(() => {
-    if (!divCourses.find(c => c.id === courseId)) {
+    if (embedded) return
+    if (!divCourses.find(c => c.id === localCourseId)) {
       setCourseId(divCourses[0]?.id ?? null)
     }
   }, [division]) // eslint-disable-line
@@ -36,7 +39,7 @@ export default function AdminExams() {
   }
   useEffect(() => { load(); setEditor(null) }, [courseId, type]) // eslint-disable-line
 
-  const course = divCourses.find(c => c.id === courseId)
+  const course = allCourses.find(c => c.id === courseId)
 
   const startAdd = () => setEditor(makeQuestion())
   const startEdit = q => setEditor({ id: q.id, text: q.text, choices: [...q.choices], answer: q.answer })
@@ -86,30 +89,35 @@ export default function AdminExams() {
     })
 
   return (
-    <div className="ax-wrap">
-      <div className="admin-head">
-        <h1 className="admin-title">Exam Management</h1>
-        <p className="admin-sub">Add and edit pre-test &amp; post-test questions for each session</p>
-      </div>
+    <div className={embedded ? '' : 'ax-wrap'}>
+      {!embedded && (
+        <div className="admin-head">
+          <h1 className="admin-title">Exam Management</h1>
+          <p className="admin-sub">Add and edit pre-test &amp; post-test questions for each session</p>
+        </div>
+      )}
 
-      {/* Division tabs */}
-      <div className="ax-tabs">
-        {DIVISIONS.map(d => (
-          <button key={d} className={`ax-tab${division === d ? ' active' : ''}`} onClick={() => setDivision(d)}>
-            {d}
-          </button>
-        ))}
-      </div>
+      {!embedded && (
+        <div className="ax-tabs">
+          {DIVISIONS.map(d => (
+            <button key={d} className={`ax-tab${division === d ? ' active' : ''}`} onClick={() => setDivision(d)}>
+              {d}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="ax-controls">
-        <label className="ax-control">
-          <span>Session</span>
-          <select value={courseId ?? ''} onChange={e => setCourseId(Number(e.target.value))}>
-            {divCourses.map(c => (
-              <option key={c.id} value={c.id}>Session {c.session} — {c.title}</option>
-            ))}
-          </select>
-        </label>
+        {!embedded && (
+          <label className="ax-control">
+            <span>Session</span>
+            <select value={courseId ?? ''} onChange={e => setCourseId(Number(e.target.value))}>
+              {divCourses.map(c => (
+                <option key={c.id} value={c.id}>Session {c.session} — {c.title}</option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <div className="ax-type">
           <button className={`ax-type-btn${type === 'pre' ? ' active' : ''}`} onClick={() => setType('pre')}>Pre-Test</button>
