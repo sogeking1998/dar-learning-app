@@ -233,7 +233,7 @@ export default function SessionDetail() {
 
       {/* Tasks */}
       <section className="sd-section">
-        <h2 className="sd-section-title"><ClipboardList size={18} className="icon-tasks" /> Tasks per Topic</h2>
+        <h2 className="sd-section-title"><ClipboardList size={18} className="icon-tasks" /> Tasks</h2>
         {tasks.length === 0 ? (
           <p className="sd-none">No tasks for this session.</p>
         ) : (

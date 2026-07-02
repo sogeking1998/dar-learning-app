@@ -345,7 +345,7 @@ export default function BrowseCourses() {
                             <div className="mat-info">
                               <ClipboardList size={18} className="mat-icon icon-tasks" />
                               <div>
-                                <p className="mat-name">Tasks per Topic</p>
+                                <p className="mat-name">Tasks</p>
                                 <p className="mat-sub">{doneCount}/{courseTasks.length} completed</p>
                               </div>
                             </div>

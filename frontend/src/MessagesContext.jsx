@@ -28,7 +28,10 @@ export function MessagesProvider({ children }) {
   const me = session?.user?.id
   const [directory, setDirectory] = useState([])  // real users from `profiles`
   const [onlineIds, setOnlineIds] = useState([])  // ids currently connected
-  const [seenAt, setSeenAt] = useState({})        // { userId: ISO time we last saw them online }
+  // { userId: ISO time we last saw them online } — persisted so it survives refresh.
+  const [seenAt, setSeenAt] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('dar_seen_at') || '{}') } catch { return {} }
+  })
   const [msgs, setMsgs] = useState([])            // all message rows involving me
   const [reactions, setReactions] = useState([])  // {message_id, user_id, emoji}
   const [notice, setNotice] = useState(null)      // newest incoming message, for the toast
@@ -80,7 +83,7 @@ export function MessagesProvider({ children }) {
         setSeenAt(prev => {
           const next = { ...prev }
           const now = new Date().toISOString()
-          for (const id of ids) next[id] = state[id]?.[0]?.online_at || now
+          for (const id of ids) next[id] = now
           return next
         })
       })
@@ -89,6 +92,26 @@ export function MessagesProvider({ children }) {
       })
     return () => { supabase.removeChannel(channel) }
   }, [me])
+
+  // While people stay online, keep bumping their observed time (so when they
+  // leave, "Online X ago" starts from their departure, not their arrival) —
+  // and persist the map so it survives a page refresh.
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (onlineIds.length === 0) return
+      setSeenAt(prev => {
+        const next = { ...prev }
+        const now = new Date().toISOString()
+        for (const id of onlineIds) next[id] = now
+        return next
+      })
+    }, 60_000)
+    return () => clearInterval(t)
+  }, [onlineIds])
+
+  useEffect(() => {
+    try { localStorage.setItem('dar_seen_at', JSON.stringify(seenAt)) } catch { /* full/blocked storage is fine */ }
+  }, [seenAt])
 
   // When the online set changes (someone connects/disconnects), refresh
   // everyone's last_seen so a user who just went offline immediately reads
