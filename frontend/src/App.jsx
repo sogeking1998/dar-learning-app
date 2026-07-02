@@ -4,8 +4,7 @@ import { UserProvider, useUser } from './UserContext'
 import { MessagesProvider } from './MessagesContext'
 import { CallProvider } from './CallContext'
 import { useAuth } from './AuthContext'
-import Sidebar from './components/Sidebar'
-import Topbar from './components/Topbar'
+import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import OnboardingModal from './components/OnboardingModal'
 import MessageNotifier from './components/MessageNotifier'
@@ -80,51 +79,28 @@ function AuthedApp() {
 
 function AppShell() {
   const { needsOnboarding } = useUser()
-  const [collapsed, setCollapsed] = useState(false)   // desktop icon rail
-  const [mobileOpen, setMobileOpen] = useState(false) // mobile drawer
   const location = useLocation()
 
-  // On route change: close the mobile drawer and scroll back to the top.
-  useEffect(() => {
-    setMobileOpen(false)
-    window.scrollTo(0, 0)
-  }, [location.pathname])
-
-  // Lock body scroll while the mobile drawer is open.
-  useEffect(() => {
-    document.body.style.overflow = mobileOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [mobileOpen])
+  // Scroll back to the top on every route change.
+  useEffect(() => { window.scrollTo(0, 0) }, [location.pathname])
 
   return (
-    <div className={`app-layout${collapsed ? ' is-collapsed' : ''}${mobileOpen ? ' is-mobile-open' : ''}`}>
-      <Sidebar
-        collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed(c => !c)}
-        onCloseMobile={() => setMobileOpen(false)}
-      />
-      <div
-        className="sidebar-scrim"
-        onClick={() => setMobileOpen(false)}
-        aria-hidden="true"
-      />
-      <div className="main-wrapper">
-        <Topbar onOpenMobile={() => setMobileOpen(true)} />
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/courses/my" element={<MyCourses />} />
-            <Route path="/courses/browse" element={<BrowseCourses />} />
-            <Route path="/resources" element={<Resources />} />
-            <Route path="/certificates" element={<Certificates />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
+    <div className="app-layout">
+      <Navbar />
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/courses/my" element={<MyCourses />} />
+          <Route path="/courses/browse" element={<BrowseCourses />} />
+          <Route path="/resources" element={<Resources />} />
+          <Route path="/certificates" element={<Certificates />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+      <Footer />
 
       {/* First-time users complete their profile before using the app. */}
       {needsOnboarding && <OnboardingModal />}
