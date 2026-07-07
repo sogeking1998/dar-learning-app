@@ -181,19 +181,35 @@
 }
 
 .dh-status {
+  --st: rgba(255,255,255,0.8);
   font-size: 10px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.6px;
-  padding: 4px 11px; border-radius: 99px;
-  display: inline-flex; align-items: center; gap: 6px;
+  text-transform: uppercase; letter-spacing: 0.7px;
+  color: rgba(255,255,255,0.92);
+  padding: 5px 11px 5px 10px; border-radius: 8px;
+  display: inline-flex; align-items: center; gap: 8px;
   white-space: nowrap;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.16);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
 }
 .dh-status::before {
-  content: ''; width: 6px; height: 6px; border-radius: 50%;
-  background: currentColor;
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--st); flex-shrink: 0;
+  box-shadow: 0 0 8px var(--st);
 }
-.dhs-done   { background: rgba(74,222,128,0.22);  color: #bbf7d0; }
-.dhs-active { background: rgba(96,165,250,0.22);  color: #bfdbfe; }
-.dhs-none   { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.65); }
+.dhs-done   { --st: #4ade80; }
+.dhs-active { --st: #7cc0ff; }
+.dhs-none   { --st: rgba(255,255,255,0.5); }
+.dhs-none::before { box-shadow: none; }
+
+/* Live pulse for in-progress */
+.dhs-active::before { animation: dh-pulse 1.7s ease-out infinite; }
+@keyframes dh-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(124,192,255,0.55), 0 0 8px #7cc0ff; }
+  70%  { box-shadow: 0 0 0 7px rgba(124,192,255,0), 0 0 8px #7cc0ff; }
+  100% { box-shadow: 0 0 0 0 rgba(124,192,255,0), 0 0 8px #7cc0ff; }
+}
 
 .dh-progress-wrap { display: flex; align-items: center; gap: 10px; }
 .dh-bar {

@@ -61,7 +61,7 @@ export default function AuthLayout({ children }) {
         <aside className="auth-aside">
           <div className="auth-aside-brand">
             <div className="auth-logo-icon"><DarLogo size={26} /></div>
-            <span>DAR Online CapDev</span>
+            <span>TARUNGA</span>
           </div>
 
           <div className="auth-aside-content">

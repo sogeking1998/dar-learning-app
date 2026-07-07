@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   Bell, Play, Sprout, ScrollText, Scale, Building2,
+  Link2, Users, ArrowUpRight,
 } from 'lucide-react'
 import { getAnnouncements } from '../announcementStore'
 import { getWelcomeVideo } from '../videoStore'
@@ -129,6 +130,22 @@ export default function Home() {
           </div>
         </section>
       </div>
+
+      {/* ── QUICK LINKS ── */}
+      <section className="hsec">
+        <div className="sec-hd">
+          <h2 className="sec-title"><Link2 size={16} /> Quick Links</h2>
+        </div>
+        <a className="ql-directory" href="https://www.dar.gov.ph/directory" target="_blank" rel="noreferrer">
+          <span className="qld-glow" aria-hidden="true" />
+          <span className="qld-icon"><Users size={24} /></span>
+          <span className="qld-text">
+            <span className="qld-title">DAR Directory</span>
+            <span className="qld-sub">Officials &amp; contact information · dar.gov.ph</span>
+          </span>
+          <span className="qld-cta">Visit <ArrowUpRight size={16} /></span>
+        </a>
+      </section>
 
     </div>
   )

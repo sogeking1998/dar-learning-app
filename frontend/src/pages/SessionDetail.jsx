@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
-  PlayCircle, FileText, Download, CheckCircle2, ClipboardList,
-  BookOpen, ArrowLeft, Clock, Hash, GraduationCap
+  MonitorPlay, FileText, Download, CheckCircle2, ClipboardCheck,
+  BookOpen, ArrowLeft, Award, Lock, Eye
 } from 'lucide-react'
 import { getCourses } from '../courseStore'
 import { useUser } from '../UserContext'
@@ -14,6 +14,7 @@ import { getMaterialsForCourse } from '../materialsStore'
 import QuizModal from '../components/QuizModal'
 import TaskModal from '../components/TaskModal'
 import VideoModal from '../components/VideoModal'
+import CertificateModal from '../components/CertificateModal'
 import DarLogo from '../components/DarLogo'
 import './SessionDetail.css'
 
@@ -27,12 +28,12 @@ function Shell({ children }) {
           <div className="sd-brand">
             <DarLogo size={34} />
             <div>
-              <p className="sd-brand-name">DAR Online CapDev</p>
-              <p className="sd-brand-sub">Capacity Development Platform</p>
+              <p className="sd-brand-name">TARUNGA</p>
+              <p className="sd-brand-sub">DAR Online CapDev · Newly Hired Employees</p>
             </div>
           </div>
-          <Link to="/courses/browse" className="sd-topbar-link">
-            <ArrowLeft size={15} /> Browse Courses
+          <Link to="/courses" className="sd-topbar-link">
+            <ArrowLeft size={15} /> Courses
           </Link>
         </div>
       </header>
@@ -46,6 +47,13 @@ const fmtTime = s => {
   const m = Math.floor(s / 60)
   const sec = Math.floor(s % 60)
   return `${m}:${String(sec).padStart(2, '0')}`
+}
+
+// Deterministic issue date derived from course id — matches the Certificates page.
+const issueDateOf = id => {
+  const base = new Date('2024-02-01')
+  base.setDate(base.getDate() + id * 9)
+  return base
 }
 
 export default function SessionDetail() {
@@ -66,6 +74,7 @@ export default function SessionDetail() {
   const [quiz, setQuiz] = useState(null)
   const [taskModal, setTaskModal] = useState(null)
   const [videoModal, setVideoModal] = useState(null)
+  const [showCert, setShowCert] = useState(false)
 
   const loadSubs = () => { if (userId) getSubmissionsForUser(userId).then(setSubmissions) }
   const loadResults = () => { if (userId) getResultsForUser(userId).then(setResults) }
@@ -111,7 +120,7 @@ export default function SessionDetail() {
         <div className="sd-empty">
           <BookOpen size={40} />
           <p>Session not found.</p>
-          <Link to="/courses/browse" className="sd-back-link"><ArrowLeft size={15} /> Back to Browse Courses</Link>
+          <Link to="/courses" className="sd-back-link"><ArrowLeft size={15} /> Back to Courses</Link>
         </div>
       </Shell>
     )
@@ -138,19 +147,12 @@ export default function SessionDetail() {
     <Shell>
       {/* Hero / session summary */}
       <header className="sd-hero">
+        <span className="sd-hero-glow" aria-hidden="true" />
         <div className="sd-hero-top">
           <span className="sd-session-pill">Session {course.session}</span>
-          {course.code && <span className="sd-code">{course.code}</span>}
-          <span className="sd-division">{course.division}</span>
         </div>
         <h1 className="sd-title">{course.title}</h1>
         {course.description && <p className="sd-desc">{course.description}</p>}
-
-        <div className="sd-meta">
-          {videoDurationLabel && <span className="sd-meta-item"><Clock size={15} /> {videoDurationLabel}</span>}
-          <span className="sd-meta-item"><Hash size={15} /> {course.code || `Session ${course.session}`}</span>
-          <span className="sd-meta-item"><GraduationCap size={15} /> {course.division} Division</span>
-        </div>
 
         <div className="sd-progress">
           <div className="sd-progress-bar">
@@ -169,11 +171,11 @@ export default function SessionDetail() {
       {/* Quick stat cards */}
       <div className="sd-stats">
         <div className="sd-stat">
-          <PlayCircle size={20} className="sd-stat-ic icon-video" />
+          <MonitorPlay size={20} className="sd-stat-ic icon-video" />
           <div><p className="sd-stat-num">{watchedCount}/{videos.length}</p><p className="sd-stat-lbl">Videos watched</p></div>
         </div>
         <div className="sd-stat">
-          <ClipboardList size={20} className="sd-stat-ic icon-tasks" />
+          <ClipboardCheck size={20} className="sd-stat-ic icon-tasks" />
           <div><p className="sd-stat-num">{taskDoneCount}/{tasks.length}</p><p className="sd-stat-lbl">Tasks done</p></div>
         </div>
         <div className="sd-stat">
@@ -188,7 +190,7 @@ export default function SessionDetail() {
 
       {/* Video lectures */}
       <section className="sd-section">
-        <h2 className="sd-section-title"><PlayCircle size={18} className="icon-video" /> Video Lectures</h2>
+        <h2 className="sd-section-title"><MonitorPlay size={18} className="icon-video" /> Video Lectures</h2>
         {videos.length === 0 ? (
           <p className="sd-none">No videos uploaded yet.</p>
         ) : (
@@ -229,7 +231,7 @@ export default function SessionDetail() {
 
       {/* Tasks */}
       <section className="sd-section">
-        <h2 className="sd-section-title"><ClipboardList size={18} className="icon-tasks" /> Tasks</h2>
+        <h2 className="sd-section-title"><ClipboardCheck size={18} className="icon-tasks" /> Tasks</h2>
         {tasks.length === 0 ? (
           <p className="sd-none">No tasks for this session.</p>
         ) : (
@@ -314,6 +316,36 @@ export default function SessionDetail() {
         )}
       </section>
 
+      {/* Certificate */}
+      <section className="sd-section">
+        <h2 className="sd-section-title"><Award size={18} className="icon-cert" /> Certificate</h2>
+        {pct === 100 ? (
+          <div className="sd-cert sd-cert-ready">
+            <div className="sd-cert-badge"><Award size={26} /></div>
+            <div className="sd-cert-info">
+              <p className="sd-item-title">Certificate of Completion</p>
+              <p className="sd-item-sub">You've completed this session — your certificate is ready to download.</p>
+            </div>
+            <div className="sd-cert-actions">
+              <button className="sd-icon-btn" onClick={() => setShowCert(true)} title="View certificate"><Eye size={15} /></button>
+              <button className="sd-btn" onClick={() => setShowCert(true)}><Download size={14} /> Download</button>
+            </div>
+          </div>
+        ) : (
+          <div className="sd-cert sd-cert-locked">
+            <div className="sd-cert-badge locked"><Lock size={22} /></div>
+            <div className="sd-cert-info">
+              <p className="sd-item-title">Certificate locked</p>
+              <p className="sd-item-sub">Complete the video, task, pre-test and post-test to unlock your certificate.</p>
+            </div>
+            <div className="sd-cert-prog">
+              <div className="sd-cert-bar"><div className="sd-cert-fill" style={{ width: `${pct}%` }} /></div>
+              <span className="sd-cert-pct">{pct}%</span>
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Modals */}
       {quiz && (
         <QuizModal
@@ -343,6 +375,14 @@ export default function SessionDetail() {
           alreadyCompleted={videoProg[videoModal.video.id]?.completed}
           onClose={() => setVideoModal(null)}
           onProgress={loadVideoProg}
+        />
+      )}
+      {showCert && (
+        <CertificateModal
+          name={user.name}
+          course={course}
+          date={issueDateOf(course.id)}
+          onClose={() => setShowCert(false)}
         />
       )}
     </Shell>

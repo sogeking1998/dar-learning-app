@@ -10,8 +10,7 @@ import OnboardingModal from './components/OnboardingModal'
 import MessageNotifier from './components/MessageNotifier'
 import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
-import MyCourses from './pages/MyCourses'
-import BrowseCourses from './pages/BrowseCourses'
+import Courses from './pages/Courses'
 import SessionDetail from './pages/SessionDetail'
 import Resources from './pages/Resources'
 import Certificates from './pages/Certificates'
@@ -91,8 +90,10 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/courses/my" element={<MyCourses />} />
-          <Route path="/courses/browse" element={<BrowseCourses />} />
+          <Route path="/courses" element={<Courses />} />
+          {/* Old split routes now fold into the single Courses page. */}
+          <Route path="/courses/my" element={<Navigate to="/courses" replace />} />
+          <Route path="/courses/browse" element={<Navigate to="/courses" replace />} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/certificates" element={<Certificates />} />
           <Route path="/messages" element={<Messages />} />

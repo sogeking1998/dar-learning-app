@@ -1,0 +1,296 @@
+/* ── Page header ── */
+.courses-page .page-header { margin-bottom: 24px; }
+.courses-page .page-title {
+  font-size: 28px; font-weight: 800;
+  color: var(--t2); letter-spacing: -0.8px; margin-bottom: 4px;
+}
+.courses-page .page-sub { font-size: 13.5px; color: var(--t4); }
+
+/* ── Division grid (max 4 boxes) ── */
+.cv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 20px;
+}
+
+/* Per-division palette: gradient, bright accent, soft glow, hover edge, dark ink */
+.cv-card.pbd,   .cv-modal-head.pbd   { --grad: linear-gradient(155deg, #04140b 0%, #0b3a21 55%, #14532d 100%); --accent: #34d399; --glow: rgba(34,197,94,0.5);  --edge: rgba(52,211,153,0.55); --ink: #15803d; }
+.cv-card.lts,   .cv-modal-head.lts   { --grad: linear-gradient(155deg, #0a1030 0%, #16276b 55%, #1e3a8a 100%); --accent: #60a5fa; --glow: rgba(59,130,246,0.5); --edge: rgba(96,165,250,0.55); --ink: #1d4ed8; }
+.cv-card.ajd,   .cv-modal-head.ajd   { --grad: linear-gradient(155deg, #20002a 0%, #591567 55%, #7e1d8c 100%); --accent: #e879f9; --glow: rgba(192,38,211,0.5); --edge: rgba(232,121,249,0.55); --ink: #a21caf; }
+.cv-card.admin, .cv-modal-head.admin { --grad: linear-gradient(155deg, #1a0900 0%, #6b2f08 55%, #92400e 100%); --accent: #fbbf24; --glow: rgba(245,158,11,0.5); --edge: rgba(251,191,36,0.55); --ink: #b45309; }
+
+/* ── Division card — floating gradient panel + white body ── */
+.cv-card {
+  position: relative;
+  display: flex; flex-direction: column;
+  margin-top: 24px;                 /* reserves room for the panel overhang */
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--bdr);
+  box-shadow: var(--s1);
+  text-align: left; font-family: inherit; cursor: pointer;
+  transition: transform 0.28s cubic-bezier(.2,.7,.2,1), box-shadow 0.28s;
+}
+.cv-card:hover { transform: translateY(-6px); box-shadow: 0 24px 46px -20px var(--glow); }
+
+/* Animated rotating gradient border on hover (Uiverse-style) */
+@property --cv-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes cv-border-spin { to { --cv-angle: 360deg; } }
+.cv-card::after {
+  content: ''; position: absolute; inset: 0; z-index: 1;
+  border-radius: inherit; padding: 2px;
+  background: conic-gradient(from var(--cv-angle),
+    transparent 0deg, var(--accent) 70deg, var(--ink) 140deg, transparent 200deg,
+    transparent 240deg, var(--accent) 320deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s;
+  animation: cv-border-spin 3s linear infinite;
+  animation-play-state: paused;
+  pointer-events: none;
+}
+.cv-card:hover::after { opacity: 1; animation-play-state: running; }
+
+/* Floating gradient panel — overhangs above the white card (-mt-6 mx-4) */
+.cv-panel {
+  position: relative; isolation: isolate; overflow: hidden;
+  z-index: 2;
+  height: 104px; border-radius: 14px;
+  margin: -24px 16px 0;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 18px;
+  background: var(--grad); color: #fff;
+  box-shadow: 0 14px 26px -6px var(--glow), 0 6px 14px -6px rgba(0,0,0,0.28);
+}
+.cv-glow {
+  position: absolute; top: -40%; right: -25%;
+  width: 70%; height: 90%; z-index: -1;
+  background: radial-gradient(circle, var(--glow), transparent 68%);
+  filter: blur(22px); opacity: 0.9;
+  transition: transform 0.3s;
+  pointer-events: none;
+}
+.cv-card:hover .cv-glow { transform: scale(1.15); }
+.cv-panel::after {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1), transparent 40%);
+  pointer-events: none;
+}
+/* Icon + title share one row */
+.cv-panel-row {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+}
+/* Frosted icon — right side of the row */
+.cv-panel-icon {
+  flex-shrink: 0;
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.22);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+  backdrop-filter: blur(6px);
+  transition: transform 0.28s;
+}
+.cv-card:hover .cv-panel-icon { transform: translateY(-2px); }
+
+/* Division title — inside the panel, over the gradient */
+.cv-title {
+  flex: 1; min-width: 0;
+  font-size: 17px; font-weight: 800;
+  letter-spacing: -0.3px; line-height: 1.2;
+  color: #fff;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* Body */
+.cv-body { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }
+.cv-desc {
+  font-size: 12.5px; line-height: 1.55; color: var(--t3);
+  margin-bottom: 16px; flex: 1;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.cv-progress { margin-bottom: 16px; }
+.cv-track {
+  height: 5px; border-radius: 99px; overflow: hidden;
+  background: var(--surface-2); margin-bottom: 7px;
+}
+.cv-fill {
+  height: 100%; border-radius: 99px;
+  background: var(--ink);
+  transition: width 0.6s ease;
+}
+.cv-progress-lbl { font-size: 11px; font-weight: 600; color: var(--t4); }
+
+/* Gradient button — full width, centered */
+.cv-cta {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  padding: 12px 18px; border-radius: 10px;
+  font-size: 12px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: #fff; background: var(--grad);
+  box-shadow: 0 8px 18px -8px var(--glow);
+  transition: transform 0.2s, box-shadow 0.2s, gap 0.2s;
+}
+.cv-card:hover .cv-cta {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px -8px var(--glow);
+  gap: 11px;
+}
+
+/* ── Modal ── */
+.cv-modal-scrim {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(3, 15, 7, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: cv-fade 0.15s ease;
+}
+@keyframes cv-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.cv-modal {
+  background: var(--surface);
+  border-radius: 22px;
+  width: 100%; max-width: 560px;
+  max-height: 85vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--bdr);
+  box-shadow: 0 30px 70px -20px rgba(0,0,0,0.5);
+  animation: cv-pop 0.2s cubic-bezier(.2,.7,.2,1);
+}
+@keyframes cv-pop { from { transform: translateY(14px) scale(0.97); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Modal header — floating gradient panel, matches the division cards */
+.cv-modal-head {
+  position: relative; overflow: hidden; isolation: isolate;
+  margin: 14px;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex; align-items: flex-start; gap: 14px;
+  color: #fff;
+  background: var(--grad);
+  box-shadow: 0 14px 26px -8px var(--glow), 0 6px 14px -8px rgba(0,0,0,0.28);
+}
+/* Frosted division icon, left */
+.cv-modal-ficon {
+  flex-shrink: 0; position: relative; z-index: 1;
+  width: 46px; height: 46px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.22);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+  backdrop-filter: blur(6px);
+}
+.cv-modal-head-main { flex: 1; min-width: 0; position: relative; z-index: 1; }
+.cv-modal-title {
+  font-size: 21px; font-weight: 800; color: #fff;
+  letter-spacing: -0.5px; line-height: 1.2;
+}
+.cv-modal-meta {
+  font-size: 12px; color: rgba(255,255,255,0.62);
+  margin-top: 6px; font-weight: 500;
+}
+.cv-modal-close {
+  flex-shrink: 0; position: relative; z-index: 1;
+  width: 32px; height: 32px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #fff; cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.cv-modal-close:hover { background: rgba(255,255,255,0.26); transform: rotate(90deg); }
+
+.cv-modal-body { padding: 2px 14px 16px; overflow-y: auto; }
+
+/* Session rows — pill-free: stacked index + status stripe + dot */
+.cv-session-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.cv-session-row {
+  --st: #94a3b8;
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 16px 14px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--bdr);
+  background: var(--surface);
+  text-decoration: none; color: inherit;
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+.cv-session-row.st-done     { --st: #22c55e; }
+.cv-session-row.st-progress { --st: #3b82f6; }
+.cv-session-row.st-pending  { --st: #b6bcc6; }
+.cv-session-row::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px; background: var(--st);
+  transition: width 0.18s;
+}
+.cv-session-row:hover {
+  transform: translateX(3px);
+  border-color: var(--st);
+  box-shadow: 0 10px 24px -14px rgba(0,0,0,0.4);
+}
+.cv-session-row:hover::before { width: 6px; }
+
+.cv-session-idx {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 42px; flex-shrink: 0; line-height: 1;
+}
+.cv-session-idx small {
+  font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--t4); margin-bottom: 4px;
+}
+.cv-session-idx b {
+  font-size: 23px; font-weight: 800;
+  color: var(--t2); letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-session-info { flex: 1; min-width: 0; }
+.cv-session-title {
+  font-size: 14px; font-weight: 600; color: var(--t2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cv-session-desc {
+  font-size: 11.5px; color: var(--t4); margin-top: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.cv-session-end { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.cv-session-state {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11.5px; font-weight: 700; color: var(--t3);
+  white-space: nowrap;
+}
+.cv-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--st);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--st) 22%, transparent);
+}
+.cv-session-open { color: var(--t4); flex-shrink: 0; transition: color 0.15s, transform 0.15s; }
+.cv-session-row:hover .cv-session-open { color: var(--st); transform: translate(1px, -1px); }
+
+.cv-modal-empty {
+  text-align: center; padding: 44px 20px; color: var(--t4);
+}
+.cv-modal-empty svg { margin: 0 auto 12px; opacity: 0.4; display: block; }
+.cv-spin { animation: cv-rot 0.9s linear infinite; opacity: 0.6; }
+@keyframes cv-rot { to { transform: rotate(360deg); } }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .courses-page .page-title { font-size: 23px; }
+  .cv-grid { grid-template-columns: 1fr; gap: 15px; }
+  .cv-title { font-size: 18px; }
+}

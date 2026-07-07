@@ -139,7 +139,7 @@ export default function Signup() {
 
         <div className="auth-mobile-logo">
           <div className="auth-logo-icon"><DarLogo size={26} /></div>
-          <span>DAR Online CapDev</span>
+          <span>TARUNGA</span>
         </div>
 
         <div className="auth-otp-badge"><ShieldCheck size={26} /></div>

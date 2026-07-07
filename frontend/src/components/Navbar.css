@@ -11,7 +11,8 @@
   margin: 0 auto;
   height: 64px;
   padding: 0 24px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 18px;
 }
@@ -23,11 +24,21 @@
   flex-shrink: 0;
 }
 .nb-logo {
-  width: 40px; height: 40px; border-radius: 11px;
-  background: linear-gradient(140deg, var(--g500) 0%, var(--g400) 55%, #86efac 100%);
+  width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  color: #06240f; flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(34,197,94,0.35), inset 0 0 0 1px rgba(255,255,255,0.25);
+  background: radial-gradient(125% 125% at 30% 18%, #ffffff 0%, #ecfdf3 55%, #d7f5e3 100%);
+  box-shadow:
+    0 6px 16px rgba(0,0,0,0.32),
+    0 0 0 1px rgba(255,255,255,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.nb-brand:hover .nb-logo {
+  transform: translateY(-1px);
+  box-shadow:
+    0 8px 22px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(74,222,128,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.9);
 }
 .nb-brand-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
 .nb-brand-title {
@@ -38,7 +49,7 @@
 .nb-brand-sub { font-size: 9.5px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--g400); opacity: 0.7; }
 
 /* Desktop links */
-.nb-links { display: flex; align-items: center; gap: 3px; margin: 0 auto; }
+.nb-links { display: flex; align-items: center; gap: 3px; justify-self: center; }
 .nb-link {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 9px 13px; border-radius: 10px;
@@ -92,16 +103,21 @@
 }
 
 /* Right cluster */
-.nb-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.nb-user {
-  display: flex; align-items: center; gap: 9px;
-  padding: 6px 10px 6px 6px; border-radius: 99px;
+.nb-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; justify-self: end; }
+/* Settings (gear) button — merged Profile + Sign Out */
+.nb-settings-wrap { position: relative; flex-shrink: 0; }
+.nb-gear {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
   background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-  cursor: pointer; font-family: inherit;
-  transition: background 0.15s, border-color 0.15s;
+  color: rgba(255,255,255,0.65); cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
-.nb-user:hover { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.28); }
-.nb-user.active { background: rgba(74,222,128,0.12); border-color: rgba(74,222,128,0.35); }
+.nb-gear svg { transition: transform 0.5s cubic-bezier(.2,.7,.2,1); }
+.nb-gear:hover { background: rgba(74,222,128,0.12); border-color: rgba(74,222,128,0.3); color: #fff; }
+.nb-gear:hover svg { transform: rotate(120deg); }
+.nb-gear.open { background: rgba(74,222,128,0.16); border-color: rgba(74,222,128,0.42); color: #fff; }
+.nb-gear.open svg { transform: rotate(90deg); }
 .nb-avatar {
   width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
   background: linear-gradient(140deg, var(--g600), var(--g400)); color: #fff;
@@ -113,14 +129,36 @@
 .nb-user-info { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.25; min-width: 0; }
 .nb-user-name { font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,0.92); white-space: nowrap; }
 .nb-user-role { font-size: 10.5px; color: rgba(255,255,255,0.4); }
-.nb-signout {
-  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.55); cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+/* Gear dropdown menu */
+.nb-settings-menu {
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 130;
+  min-width: 224px;
+  background: #0d2118; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 8px;
+  box-shadow: 0 18px 42px rgba(0,0,0,0.55);
+  display: flex; flex-direction: column; gap: 3px;
+  animation: nb-drop 0.16s ease;
 }
-.nb-signout:hover { background: rgba(239,68,68,0.16); color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+.nb-settings-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px 12px; margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.nb-settings-id { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.nb-settings-name { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; }
+.nb-settings-role { font-size: 11px; color: rgba(255,255,255,0.45); }
+.nb-settings-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 11px 12px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8);
+  background: none; border: none; cursor: pointer; font-family: inherit; text-align: left;
+  transition: background 0.14s, color 0.14s;
+}
+.nb-settings-item svg { color: var(--g400); }
+.nb-settings-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.nb-settings-item.danger { color: #fca5a5; }
+.nb-settings-item.danger svg { color: #fca5a5; }
+.nb-settings-item.danger:hover { background: rgba(239,68,68,0.14); }
 
 /* Hamburger (mobile only) */
 .nb-burger {
@@ -180,6 +218,7 @@
 /* ═══════════════ Breakpoints ═══════════════ */
 /* Long labels + user chip get tight → collapse to hamburger below 1080px. */
 @media (max-width: 1080px) {
+  .nb-inner { display: flex; }
   .nb-links, .nb-right { display: none; }
   .nb-burger { display: flex; }
 }
