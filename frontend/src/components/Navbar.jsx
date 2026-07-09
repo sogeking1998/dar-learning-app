@@ -5,7 +5,8 @@ import {
   LogOut, FolderDown, Award, MessagesSquare, Menu, X, Settings, UserRound,
 } from 'lucide-react'
 import DarLogo from './DarLogo'
-import { useUser, initials } from '../UserContext'
+import Avatar from './Avatar'
+import { useUser } from '../UserContext'
 import { useMessages } from '../MessagesContext'
 import { useAuth } from '../AuthContext'
 import ConfirmModal from './ConfirmModal'
@@ -44,7 +45,7 @@ export default function Navbar() {
 
   const UserChip = ({ big }) => (
     <>
-      <span className={`nb-avatar${big ? ' lg' : ''}`}>{initials(user.name)}</span>
+      <Avatar name={user.name} gender={user.gender} className={`nb-avatar${big ? ' lg' : ''}`} />
       <span className="nb-user-info">
         <span className="nb-user-name">{user.name}</span>
         <span className="nb-user-role">{user.division} Division</span>
@@ -58,7 +59,7 @@ export default function Navbar() {
         <div className="nb-inner">
           {/* Brand */}
           <button className="nb-brand" onClick={() => navigate('/')}>
-            <span className="nb-logo"><DarLogo size={28} /></span>
+            <span className="nb-logo"><DarLogo size={38} /></span>
             <span className="nb-brand-text">
               <span className="nb-brand-title">TARUNGA</span>
               <span className="nb-brand-sub">DAR Online CapDev · Newly Hired Employees</span>
@@ -94,7 +95,7 @@ export default function Navbar() {
               {settingsOpen && (
                 <div className="nb-settings-menu">
                   <div className="nb-settings-head">
-                    <span className="nb-avatar">{initials(user.name)}</span>
+                    <Avatar name={user.name} gender={user.gender} className="nb-avatar" />
                     <div className="nb-settings-id">
                       <span className="nb-settings-name">{user.name}</span>
                       <span className="nb-settings-role">{user.division} Division</span>

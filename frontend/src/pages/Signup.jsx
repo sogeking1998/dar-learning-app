@@ -7,6 +7,7 @@ import Toast from '../components/Toast'
 import AuthLayout from '../components/AuthLayout'
 import AuthLoading from '../components/AuthLoading'
 import DarLogo from '../components/DarLogo'
+import GenderSelect from '../components/GenderSelect'
 import './Auth.css'
 
 const DIVISIONS = [
@@ -33,6 +34,7 @@ export default function Signup() {
   const [name, setName] = useState('')
   const [division, setDivision] = useState('')
   const [position, setPosition] = useState('')
+  const [gender, setGender] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [toast, setToast] = useState(null)
@@ -55,6 +57,7 @@ export default function Signup() {
         name: name.trim(),
         division,
         position: position.trim(),
+        gender,
         admin_status: 'pending',
       }).eq('id', user.id)
       await refreshProfile()
@@ -72,8 +75,8 @@ export default function Signup() {
       setToast({ type: 'error', message: 'Passwords do not match.' })
       return
     }
-    if (isAdminApplicant && (!name.trim() || !division || !position.trim())) {
-      setToast({ type: 'error', message: 'Please complete your name, division, and position.' })
+    if (isAdminApplicant && (!name.trim() || !division || !position.trim() || !gender)) {
+      setToast({ type: 'error', message: 'Please complete your name, division, position, and gender.' })
       return
     }
 
@@ -261,6 +264,10 @@ export default function Signup() {
                   {DIVISIONS.map(d => <option key={d.code} value={d.code}>{d.code} — {d.name}</option>)}
                 </select>
               </div>
+            </div>
+            <div className="auth-field">
+              <label>Gender</label>
+              <GenderSelect value={gender} onChange={setGender} />
             </div>
           </>
         )}

@@ -7,6 +7,7 @@ import { useAuth } from './AuthContext'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import OnboardingModal from './components/OnboardingModal'
+import GenderNudge from './components/GenderNudge'
 import MessageNotifier from './components/MessageNotifier'
 import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
@@ -17,24 +18,29 @@ import Certificates from './pages/Certificates'
 import Messages from './pages/Messages'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
-import Signup from './pages/Signup'
 import AdminDashboard from './pages/AdminDashboard'
+import CopilotDashboard from './pages/CopilotDashboard'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import PendingApproval from './pages/PendingApproval'
 import AuthLoading from './components/AuthLoading'
+import ForcePasswordReset from './components/ForcePasswordReset'
 import './App.css'
 
 const Loading = () => <AuthLoading message="Loading" />
 
 export default function App() {
-  const { session, loading, isSuperAdmin, isAdmin, adminStatus } = useAuth()
+  const { session, loading, isSuperAdmin, isAdmin, isCopilot, adminStatus, mustResetPassword } = useAuth()
 
   // Wait for Supabase to restore any existing session before deciding.
   if (loading) return <Loading />
 
+  // First-login accounts must change the default password before anything else.
+  if (session && mustResetPassword) return <ForcePasswordReset />
+
   // Role-based consoles take priority over the employee app.
   if (session && isSuperAdmin) return <SuperAdminDashboard />
   if (session && isAdmin) return <AdminDashboard />
+  if (session && isCopilot) return <CopilotDashboard />
   if (session && adminStatus === 'pending') return <PendingApproval />
 
   // Not signed in → only the login / signup pages are reachable.
@@ -42,7 +48,8 @@ export default function App() {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        {/* Sign-up removed for now — accounts will be admin-created later.
+            /signup falls through to the redirect below. */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     )
@@ -87,6 +94,7 @@ function AppShell() {
     <div className="app-layout">
       <Navbar />
       <main className="main-content">
+        <GenderNudge />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<Dashboard />} />

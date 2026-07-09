@@ -1,20 +1,19 @@
 import { useState, useEffect } from 'react'
 import {
   LayoutDashboard, LineChart, LogOut, Megaphone,
-  Users, BookOpen, BarChart3, Award, ArrowRight, Sparkles, CheckCircle2, MessageSquare, CalendarDays,
+  Users, BookOpen, BarChart3, Award, ArrowRight, Sparkles, CheckCircle2, MessageSquare,
   Menu, X,
 } from 'lucide-react'
 import { useAuth } from '../AuthContext'
 import { MessagesProvider } from '../MessagesContext'
 import { CallProvider } from '../CallContext'
-import { getAdminBookings } from '../calendarStore'
 import { MOCK_EMPLOYEES } from '../mockData'
 import DarLogo from '../components/DarLogo'
 import ConfirmModal from '../components/ConfirmModal'
 import AdminCourses from './AdminCourses'
 import AdminAnalytics from './AdminAnalytics'
 import AdminAnnouncements from './AdminAnnouncements'
-import AdminCalendar from './AdminCalendar'
+import AdminUsers from './AdminUsers'
 import Messages from './Messages'
 import './AdminDashboard.css'
 
@@ -24,8 +23,8 @@ const NAV = [
   { id: 'dashboard',     label: 'Dashboard',        icon: LayoutDashboard },
   { id: 'analytics',     label: 'Analytics',        icon: LineChart },
   { id: 'courses',       label: 'Session Management', icon: BookOpen },
+  { id: 'users',         label: 'User Management',  icon: Users },
   { id: 'messages',      label: 'Messages',         icon: MessageSquare },
-  { id: 'calendar',      label: 'My Calendar',      icon: CalendarDays },
   { id: 'announcements', label: 'Announcements',    icon: Megaphone },
 ]
 
@@ -39,42 +38,14 @@ export default function AdminDashboard() {
   )
 }
 
-// Minutes-since-midnight for a slot label like "1:30 PM".
-const slotMinutes = slot => {
-  const m = (slot || '').match(/(\d+):(\d+)\s*(AM|PM)/i)
-  if (!m) return 0
-  let h = parseInt(m[1], 10) % 12
-  if (/PM/i.test(m[3])) h += 12
-  return h * 60 + parseInt(m[2], 10)
-}
-const isUpcoming = b => {
-  const [y, mo, d] = b.meet_date.split('-').map(Number)
-  const dt = new Date(y, mo - 1, d)
-  const mins = slotMinutes(b.slot)
-  dt.setHours(Math.floor(mins / 60), mins % 60, 0, 0)
-  return dt.getTime() >= Date.now()
-}
-
 function AdminConsole() {
-  const { signOut, session } = useAuth()
-  const me = session?.user?.id
+  const { signOut } = useAuth()
   const [view, setView] = useState('dashboard')
   const [confirmOut, setConfirmOut] = useState(false)
-  const [upcoming, setUpcoming] = useState(0)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const go = id => { setView(id); setMobileOpen(false) }
   const activeLabel = (NAV.find(n => n.id === view) || {}).label || 'Admin Console'
-
-  // Refresh the upcoming-meeting count on load and whenever the view changes.
-  useEffect(() => {
-    if (!me) return
-    let active = true
-    getAdminBookings(me).then(books => {
-      if (active) setUpcoming(books.filter(isUpcoming).length)
-    })
-    return () => { active = false }
-  }, [me, view])
 
   return (
     <div className={`admin-app${mobileOpen ? ' is-mobile-open' : ''}`}>
@@ -99,7 +70,6 @@ function AdminConsole() {
               onClick={() => go(id)}
             >
               <Icon size={18} /> <span>{label}</span>
-              {id === 'calendar' && upcoming > 0 && <span className="admin-nav-badge">{upcoming}</span>}
             </button>
           ))}
         </nav>
@@ -120,7 +90,6 @@ function AdminConsole() {
             <Menu size={22} />
           </button>
           <div className="admin-topbar-brand">
-            <div className="admin-logo sm"><DarLogo size={20} /></div>
             <span>{activeLabel}</span>
           </div>
         </header>
@@ -129,8 +98,8 @@ function AdminConsole() {
           {view === 'dashboard' && <Overview onNavigate={setView} />}
           {view === 'analytics' && <AdminAnalytics />}
           {view === 'courses' && <AdminCourses />}
+          {view === 'users' && <AdminUsers />}
           {view === 'messages' && <Messages />}
-          {view === 'calendar' && <AdminCalendar />}
           {view === 'announcements' && <AdminAnnouncements />}
         </div>
       </div>

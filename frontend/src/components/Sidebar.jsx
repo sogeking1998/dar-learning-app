@@ -6,7 +6,8 @@ import {
   FolderDown, Award, Settings, X, MessageSquare
 } from 'lucide-react'
 import DarLogo from './DarLogo'
-import { useUser, initials } from '../UserContext'
+import Avatar from './Avatar'
+import { useUser } from '../UserContext'
 import { useMessages } from '../MessagesContext'
 import { useAuth } from '../AuthContext'
 import ConfirmModal from './ConfirmModal'
@@ -77,7 +78,7 @@ export default function Sidebar({ collapsed = false, onToggleCollapse, onCloseMo
         onClick={() => navigate('/profile')}
         title="View and edit your profile"
       >
-        <div className="user-avatar">{initials(user.name)}</div>
+        <Avatar name={user.name} gender={user.gender} className="user-avatar" />
         <div className="user-info">
           <span className="user-name">{user.name}</span>
           <span className="user-role">{user.division} Division</span>

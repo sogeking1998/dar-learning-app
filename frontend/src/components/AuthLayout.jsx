@@ -1,12 +1,5 @@
-import { GraduationCap, FolderDown, Award } from 'lucide-react'
 import DarLogo from './DarLogo'
 import '../pages/Auth.css'
-
-const FEATURES = [
-  { icon: GraduationCap, title: 'Structured Courses', desc: 'Step-by-step training modules' },
-  { icon: FolderDown,    title: 'Resource Materials', desc: 'Videos, exams & downloads' },
-  { icon: Award,         title: 'Certificates',       desc: 'Recognized upon completion' },
-]
 
 const Illustration = () => (
   <svg viewBox="0 0 280 230" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -61,29 +54,18 @@ export default function AuthLayout({ children }) {
         <aside className="auth-aside">
           <div className="auth-aside-brand">
             <div className="auth-logo-icon"><DarLogo size={26} /></div>
-            <span>TARUNGA</span>
+            <div className="auth-aside-org">
+              <span className="auth-aside-org1">Department of Agrarian Reform</span>
+              <span className="auth-aside-org2">Cap Dev for Newly Hired Employees</span>
+            </div>
           </div>
 
           <div className="auth-aside-content">
             <div className="auth-illustration"><Illustration /></div>
-            <h2 className="auth-aside-title">Grow your skills,<br />serve with purpose</h2>
-            <p className="auth-aside-sub">
-              The official capacity development portal for the Department of
-              Agrarian Reform.
-            </p>
+            <span className="auth-aside-eyebrow">Capacity Development Portal</span>
+            <h1 className="auth-aside-title">TARUNGA</h1>
+            <p className="auth-aside-sub">Grow your skills, serve with purpose.</p>
           </div>
-
-          <ul className="auth-features">
-            {FEATURES.map(f => (
-              <li className="auth-feature" key={f.title}>
-                <span className="auth-feature-icon"><f.icon size={18} /></span>
-                <span className="auth-feature-text">
-                  <strong>{f.title}</strong>
-                  <em>{f.desc}</em>
-                </span>
-              </li>
-            ))}
-          </ul>
         </aside>
 
         {/* ── Form panel ── */}

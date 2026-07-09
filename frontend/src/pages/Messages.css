@@ -605,3 +605,19 @@
   .msg-search { padding: 12px 12px 10px; }
   .msg-search-icon { left: 26px; }
 }
+
+/* Account-role tag beside a name — soft chip with a status dot */
+.msg-rb {
+  display: inline-flex; align-items: center; gap: 5px; vertical-align: middle;
+  font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+  padding: 3px 8px 3px 6px; border-radius: 7px; margin-left: 5px; line-height: 1;
+  border: 1px solid transparent;
+}
+.msg-rb::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 18%, transparent);
+}
+.rb-copilot { background: #f5f3ff; color: #7c3aed; border-color: #e9e2fd; }
+.rb-admin   { background: #eff6ff; color: #2563eb; border-color: #dbeafe; }
+.rb-student { background: #f0fdf4; color: #16a34a; border-color: #dcfce7; }

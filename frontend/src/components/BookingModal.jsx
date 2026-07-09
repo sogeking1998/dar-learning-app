@@ -21,8 +21,11 @@ export default function BookingModal({ conversation, onClose, onConfirm }) {
 
   const [view, setView]     = useState(new Date(today.getFullYear(), today.getMonth(), 1))
   const [selDate, setSelDate] = useState(null)
-  const [selSlot, setSelSlot] = useState(null)
-  const [booked, setBooked] = useState([])   // slots already reserved on selDate
+  const [selStart, setSelStart] = useState(null) // slot index
+  const [selEnd, setSelEnd]     = useState(null) // slot index (meeting ends AT this time)
+  const [booked, setBooked] = useState([])       // slots/ranges already reserved on selDate
+
+  const clearRange = () => { setSelStart(null); setSelEnd(null) }
 
   // Load which slots are already taken whenever the selected day changes.
   useEffect(() => {
@@ -31,6 +34,19 @@ export default function BookingModal({ conversation, onClose, onConfirm }) {
     getBookedSlots(conversation.id, iso(selDate)).then(s => { if (active) setBooked(s) })
     return () => { active = false }
   }, [selDate, conversation.id])
+
+  // Expand every existing booking (a "9:00 AM – 10:30 AM" range, or a legacy
+  // single "9:00 AM") into the set of 30-min blocks it occupies. A range A–B
+  // occupies the blocks [A, B); a single slot occupies just that one block.
+  const occupied = new Set()
+  booked.forEach(b => {
+    const parts = String(b).split('–').map(x => x.trim())
+    const a = slots.indexOf(parts[0])
+    if (a < 0) return
+    let z = parts[1] ? slots.indexOf(parts[1]) : a + 1
+    if (z < 0) z = slots.length
+    for (let i = a; i < z; i++) occupied.add(i)
+  })
 
   const year = view.getFullYear()
   const month = view.getMonth()
@@ -48,11 +64,24 @@ export default function BookingModal({ conversation, onClose, onConfirm }) {
 
   const stepMonth = delta => {
     setView(new Date(year, month + delta, 1))
-    setSelDate(null); setSelSlot(null)
+    setSelDate(null); clearRange()
   }
 
   const fmtFull = d =>
     d.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+
+  // Click logic: first click sets the start, second (a later free time) sets the end.
+  const pickSlot = i => {
+    if (occupied.has(i)) return
+    if (selStart === null || selEnd !== null) { setSelStart(i); setSelEnd(null); return }
+    if (i === selStart) { clearRange(); return }
+    if (i < selStart) { setSelStart(i); setSelEnd(null); return }
+    // i > selStart → valid only if every block between start and end is free.
+    for (let k = selStart + 1; k < i; k++) if (occupied.has(k)) { setSelStart(i); setSelEnd(null); return }
+    setSelEnd(i)
+  }
+
+  const rangeLabel = selStart !== null && selEnd !== null ? `${slots[selStart]} – ${slots[selEnd]}` : null
 
   return (
     <div className="bk-overlay" onClick={onClose}>
@@ -96,7 +125,7 @@ export default function BookingModal({ conversation, onClose, onConfirm }) {
                     key={date.getTime()}
                     className={`bk-day${bookable ? ' bookable' : ''}${selected ? ' selected' : ''}${isToday ? ' today' : ''}`}
                     disabled={!bookable}
-                    onClick={() => { setSelDate(date); setSelSlot(null) }}
+                    onClick={() => { setSelDate(date); clearRange() }}
                   >
                     {date.getDate()}
                   </button>
@@ -109,29 +138,40 @@ export default function BookingModal({ conversation, onClose, onConfirm }) {
             </div>
           </div>
 
-          {/* Slots */}
+          {/* Slots — pick a start then an end */}
           <div className="bk-slots">
             {!selDate ? (
               <div className="bk-slots-empty">
                 <Clock size={26} />
-                <p>Select an available day to see open time slots.</p>
+                <p>Select an available day to choose a meeting time.</p>
               </div>
             ) : (
               <>
                 <p className="bk-slots-date">{fmtFull(selDate)}</p>
-                <p className="bk-slots-label">Choose a time</p>
+                <p className="bk-slots-label">
+                  {selStart === null
+                    ? 'Tap a start time'
+                    : selEnd === null
+                      ? 'Now tap an end time'
+                      : 'Meeting time selected'}
+                </p>
                 <div className="bk-slot-list">
-                  {slots.map(s => {
-                    const taken = booked.includes(s)
+                  {slots.map((s, i) => {
+                    const taken = occupied.has(i)
+                    const isStart = i === selStart
+                    const isEnd = i === selEnd
+                    const inRange = selStart !== null && selEnd !== null && i > selStart && i < selEnd
                     return (
                       <button
                         key={s}
-                        className={`bk-slot${selSlot === s ? ' selected' : ''}${taken ? ' taken' : ''}`}
-                        onClick={() => !taken && setSelSlot(s)}
+                        className={`bk-slot${isStart || isEnd ? ' selected' : ''}${inRange ? ' inrange' : ''}${taken ? ' taken' : ''}`}
+                        onClick={() => pickSlot(i)}
                         disabled={taken}
                       >
                         <Clock size={13} /> {s}
-                        {taken && <span className="bk-slot-tag">Reserved</span>}
+                        {isStart && <span className="bk-slot-tag bk-tag-se">Start</span>}
+                        {isEnd && <span className="bk-slot-tag bk-tag-se">End</span>}
+                        {taken && !isStart && !isEnd && <span className="bk-slot-tag">Reserved</span>}
                       </button>
                     )
                   })}
@@ -143,16 +183,16 @@ export default function BookingModal({ conversation, onClose, onConfirm }) {
 
         <footer className="bk-foot">
           <div className="bk-summary">
-            {selDate && selSlot
-              ? <span><strong>{fmtFull(selDate)}</strong> at <strong>{selSlot}</strong></span>
-              : <span className="bk-summary-hint">Pick a day and time to continue</span>}
+            {selDate && rangeLabel
+              ? <span><strong>{fmtFull(selDate)}</strong> · <strong>{rangeLabel}</strong></span>
+              : <span className="bk-summary-hint">Pick a day, then a start and end time</span>}
           </div>
           <div className="bk-foot-btns">
             <button className="bk-btn bk-btn-cancel" onClick={onClose}>Cancel</button>
             <button
               className="bk-btn bk-btn-confirm"
-              disabled={!selDate || !selSlot}
-              onClick={() => onConfirm(selDate, selSlot)}
+              disabled={!selDate || !rangeLabel}
+              onClick={() => onConfirm(selDate, rangeLabel)}
             >
               <Check size={15} /> Confirm Booking
             </button>

@@ -1,0 +1,41 @@
+.gs-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.gs-opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1.5px solid #d8dce1;
+  border-radius: 10px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.gs-opt:hover { border-color: #b9c0c9; }
+
+.gs-opt-ic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gs-opt.gs-male.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.gs-opt.gs-female.active {
+  border-color: #db2777;
+  background: #fdf2f8;
+  color: #be185d;
+  box-shadow: 0 0 0 3px rgba(219, 39, 119, 0.12);
+}

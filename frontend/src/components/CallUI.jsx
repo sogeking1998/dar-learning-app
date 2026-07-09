@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera } from 'lucide-react'
 import { useCall } from '../CallContext'
-import { initials } from '../UserContext'
+import { useMessages } from '../MessagesContext'
+import Avatar from './Avatar'
 import { startRing } from '../ring'
 import './CallUI.css'
 
@@ -10,6 +11,8 @@ export default function CallUI() {
     call, localStream, remoteStream, muted, camOff,
     answer, decline, hangup, toggleMute, toggleCam, openCamera, flipCamera,
   } = useCall()
+  const { users } = useMessages()
+  const peerGender = users?.find(u => u.id === call?.peerId)?.gender
   const remoteVideo = useRef(null)
   const localVideo = useRef(null)
   const remoteAudio = useRef(null)
@@ -37,7 +40,7 @@ export default function CallUI() {
     return (
       <div className="callui-overlay">
         <div className="callui-incoming">
-          <div className="callui-avatar ring">{initials(call.peerName)}</div>
+          <Avatar name={call.peerName} gender={peerGender} className="callui-avatar ring" />
           <p className="callui-name">{call.peerName}</p>
           <p className="callui-sub">Incoming {isVideo ? 'video' : 'audio'} call…</p>
           <div className="callui-incoming-btns">
@@ -64,7 +67,7 @@ export default function CallUI() {
           <video ref={remoteVideo} autoPlay playsInline className="callui-remote-video" />
         ) : (
           <div className="callui-audio-center">
-            <div className="callui-avatar big">{initials(call.peerName)}</div>
+            <Avatar name={call.peerName} gender={peerGender} className="callui-avatar big" />
             <p className="callui-name lg">{call.peerName}</p>
             <p className="callui-sub">{statusText}</p>
           </div>

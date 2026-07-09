@@ -325,37 +325,59 @@
 /* ═══════════════════════════════
    QUICK LINKS
 ═══════════════════════════════ */
+/* Breathing room above the section title */
+.hsec-ql { margin-top: 38px; }
+
 .ql-directory {
   position: relative; overflow: hidden;
-  display: flex; align-items: center; gap: 16px;
-  padding: 22px 24px;
-  border-radius: var(--rad-l);
+  display: flex; align-items: center; gap: 18px;
+  padding: 20px 22px;
+  border-radius: 16px;
   background: var(--surface);
   border: 1px solid var(--bdr);
   color: var(--t1); text-decoration: none;
-  box-shadow: var(--s1);
+  box-shadow: 0 1px 2px rgba(8,15,8,0.04), 0 12px 26px -22px rgba(8,15,8,0.4);
   transition: transform 0.25s cubic-bezier(.2,.7,.2,1), box-shadow 0.25s, border-color 0.25s;
 }
-.ql-directory:hover { transform: translateY(-3px); border-color: var(--g600); box-shadow: var(--s2); }
+/* accent rail that grows on hover */
+.ql-directory::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: linear-gradient(180deg, var(--g500), var(--g700));
+  opacity: 0; transition: opacity 0.25s;
+}
+.ql-directory:hover {
+  transform: translateY(-3px);
+  border-color: var(--g600);
+  box-shadow: 0 18px 34px -24px rgba(11,81,50,0.7);
+}
+.ql-directory:hover::before { opacity: 1; }
+
 .qld-glow { display: none; }
 .qld-icon {
-  width: 52px; height: 52px; border-radius: 15px; flex-shrink: 0;
+  width: 48px; height: 48px; border-radius: 13px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   background: var(--g100); color: var(--g700);
-  transition: background 0.2s, color 0.2s;
+  box-shadow: inset 0 0 0 1px rgba(11,81,50,0.08);
+  transition: background 0.22s, color 0.22s, transform 0.22s;
 }
-.ql-directory:hover .qld-icon { background: var(--g800); color: #fff; }
+.ql-directory:hover .qld-icon { background: var(--g800); color: #fff; transform: scale(1.05); }
+
 .qld-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.qld-title { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; color: var(--t1); }
+.qld-title { font-size: 15.5px; font-weight: 800; letter-spacing: -0.2px; color: var(--t1); }
 .qld-sub { font-size: 12.5px; color: var(--t4); margin-top: 3px; }
+
 .qld-cta {
-  display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0;
-  padding: 11px 18px; border-radius: 11px;
-  font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;
-  background: var(--surface-2); border: 1px solid var(--bdr);
-  color: var(--g700); transition: background 0.2s, color 0.2s, border-color 0.2s, gap 0.2s;
+  display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0;
+  padding: 11px 20px; border-radius: 10px;
+  font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.9px;
+  color: #fff; border: none;
+  background: linear-gradient(135deg, #157347, #0b5132);
+  box-shadow: 0 8px 18px -10px rgba(11,81,50,0.75);
+  transition: filter 0.2s, box-shadow 0.2s, gap 0.2s;
 }
-.ql-directory:hover .qld-cta { background: var(--g800); color: #fff; border-color: var(--g800); gap: 10px; }
+.qld-cta svg { transition: transform 0.2s; }
+.ql-directory:hover .qld-cta { filter: brightness(1.09); box-shadow: 0 12px 22px -10px rgba(11,81,50,0.85); gap: 10px; }
+.ql-directory:hover .qld-cta svg { transform: translate(2px, -2px); }
 
 @media (max-width: 560px) {
   .ql-directory { flex-wrap: wrap; gap: 14px; }

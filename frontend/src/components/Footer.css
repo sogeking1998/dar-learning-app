@@ -14,25 +14,25 @@
 
 .footer-brand {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  align-self: flex-start;
   gap: 12px;
   flex: 1;
   min-width: 200px;
 }
 
 .footer-logo {
-  width: 40px; height: 40px;
-  background: #fff;
-  border-radius: 10px;
+  width: 50px; height: 50px;
+  background: none;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 
 .footer-brand-name {
-  font-size: 13px; font-weight: 700;
-  color: var(--a400); margin-bottom: 3px;
+  font-size: 13px; font-weight: 700; line-height: 1.25;
+  color: var(--a400); margin-bottom: 0;
 }
-.footer-brand-sub { font-size: 11px; color: rgba(255,255,255,0.3); }
+.footer-brand-sub { font-size: 11px; line-height: 1.25; color: rgba(255,255,255,0.3); }
 
 .footer-section { min-width: 150px; }
 

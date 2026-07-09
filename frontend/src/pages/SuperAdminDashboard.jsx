@@ -1,33 +1,38 @@
 import { useState, useEffect } from 'react'
 import {
-  Users, LogOut, ShieldCheck, GraduationCap,
-  Clock, Check, X, Search, UserCog,
+  Users, LogOut, ShieldCheck, GraduationCap, Headphones,
+  Clock, Check, X, Search, UserCog, UserPlus,
 } from 'lucide-react'
 import { useAuth } from '../AuthContext'
 import { supabase } from '../supabaseClient'
 import DarLogo from '../components/DarLogo'
 import ConfirmModal from '../components/ConfirmModal'
+import Avatar from '../components/Avatar'
+import Toast from '../components/Toast'
+import AddAdminModal from '../components/AddAdminModal'
+import AddCopilotModal from '../components/AddCopilotModal'
 import './AdminDashboard.css'
-
-const initials = name =>
-  (name || '?').split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
 
 const roleLabel = p =>
   p.role === 'superadmin' ? 'Super Admin'
   : p.role === 'admin' ? 'Admin'
+  : p.role === 'copilot' ? 'Co-Pilot'
   : p.admin_status === 'pending' ? 'Admin (pending)'
-  : 'Employee'
+  : 'Student'
 
 export default function SuperAdminDashboard() {
   const { signOut } = useAuth()
   const [confirmOut, setConfirmOut] = useState(false)
+  const [showAdd, setShowAdd] = useState(false)
+  const [showAddCopilot, setShowAddCopilot] = useState(false)
+  const [toast, setToast] = useState(null)
   const [profiles, setProfiles] = useState([])
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
     const { data } = await supabase
       .from('profiles')
-      .select('id, name, email, division, position, role, admin_status, joined')
+      .select('id, name, email, division, position, gender, role, admin_status, joined')
       .order('created_at', { ascending: true })
     setProfiles(data || [])
     setLoading(false)
@@ -53,14 +58,46 @@ export default function SuperAdminDashboard() {
             <span className="sa-brand-sub">User Control Console</span>
           </div>
         </div>
-        <button className="sa-signout" onClick={() => setConfirmOut(true)}>
-          <LogOut size={16} /> <span>Sign out</span>
-        </button>
+        <div className="sa-topbar-actions">
+          <button className="sa-add-btn" onClick={() => setShowAdd(true)}>
+            <UserPlus size={16} /> <span>Add Admin</span>
+          </button>
+          <button className="sa-add-btn" onClick={() => setShowAddCopilot(true)}>
+            <Headphones size={16} /> <span>Add Co-pilot</span>
+          </button>
+          <button className="sa-signout" onClick={() => setConfirmOut(true)}>
+            <LogOut size={16} /> <span>Sign out</span>
+          </button>
+        </div>
       </header>
 
       <main className="sa-main">
         <UserManagement profiles={profiles} loading={loading} onApprove={approve} onReject={reject} />
       </main>
+
+      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+
+      {showAdd && (
+        <AddAdminModal
+          onClose={() => setShowAdd(false)}
+          onCreated={email => {
+            setShowAdd(false)
+            setToast({ type: 'success', message: `Admin account created for ${email}. Default password: 123456.` })
+            load()
+          }}
+        />
+      )}
+
+      {showAddCopilot && (
+        <AddCopilotModal
+          onClose={() => setShowAddCopilot(false)}
+          onCreated={email => {
+            setShowAddCopilot(false)
+            setToast({ type: 'success', message: `Co-pilot account created for ${email}. Default password: 123456.` })
+            load()
+          }}
+        />
+      )}
 
       {confirmOut && (
         <ConfirmModal
@@ -81,14 +118,15 @@ function UserManagement({ profiles, loading, onApprove, onReject }) {
 
   const pending = profiles.filter(p => p.admin_status === 'pending')
   const admins = profiles.filter(p => p.role === 'admin').length
+  const copilots = profiles.filter(p => p.role === 'copilot').length
   const students = profiles.filter(p => p.role === 'employee' && p.admin_status !== 'pending').length
   const total = profiles.length
 
   const stats = [
     { icon: Users, value: total, label: 'Total Users', tone: 'dt-blue' },
-    { icon: GraduationCap, value: students, label: 'Employees', tone: 'dt-green' },
-    { icon: ShieldCheck, value: admins, label: 'Verified Admins', tone: 'dt-purple' },
-    { icon: Clock, value: pending.length, label: 'Pending Approvals', tone: 'dt-amber' },
+    { icon: GraduationCap, value: students, label: 'Students', tone: 'dt-green' },
+    { icon: ShieldCheck, value: admins, label: 'Admins', tone: 'dt-purple' },
+    { icon: Headphones, value: copilots, label: 'Co-Pilots', tone: 'dt-amber' },
   ]
 
   const all = profiles
@@ -135,7 +173,7 @@ function UserManagement({ profiles, loading, onApprove, onReject }) {
           <div className="sa-approvals">
             {pending.map(p => (
               <div key={p.id} className="sa-approval sa-clickable" onClick={() => setSelected(p)}>
-                <div className="admin-emp-avatar">{initials(p.name)}</div>
+                <Avatar name={p.name} gender={p.gender} className="admin-emp-avatar" />
                 <div className="sa-approval-info">
                   <span className="admin-emp-name">{p.name || '(no name)'}</span>
                   <span className="admin-emp-email">{p.email}</span>
@@ -170,7 +208,7 @@ function UserManagement({ profiles, loading, onApprove, onReject }) {
                 <tr key={p.id} className="sa-row" onClick={() => setSelected(p)}>
                   <td>
                     <div className="admin-emp">
-                      <div className="admin-emp-avatar">{initials(p.name)}</div>
+                      <Avatar name={p.name} gender={p.gender} className="admin-emp-avatar" />
                       <div className="admin-emp-info">
                         <span className="admin-emp-name">{p.name || '(no name)'}</span>
                         <span className="admin-emp-email">{p.email}</span>
@@ -183,6 +221,7 @@ function UserManagement({ profiles, loading, onApprove, onReject }) {
                     <span className={`sa-role sa-role-${p.role}${p.admin_status === 'pending' ? ' sa-role-pending' : ''}`}>
                       {p.role === 'superadmin' && <ShieldCheck size={12} />}
                       {p.role === 'admin' && <UserCog size={12} />}
+                      {p.role === 'copilot' && <Headphones size={12} />}
                       {roleLabel(p)}
                     </span>
                   </td>
@@ -228,13 +267,14 @@ function UserDetailModal({ user, onApprove, onReject, onClose }) {
         <button className="sa-modal-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
 
         <div className="sa-modal-head">
-          <div className="admin-emp-avatar sa-modal-avatar">{initials(user.name)}</div>
+          <Avatar name={user.name} gender={user.gender} className="admin-emp-avatar sa-modal-avatar" />
           <div className="sa-modal-id">
             <h3 className="sa-modal-name">{user.name || '(no name)'}</h3>
             <p className="sa-modal-email">{user.email}</p>
             <span className={`sa-role sa-role-${user.role}${pending ? ' sa-role-pending' : ''}`}>
               {user.role === 'superadmin' && <ShieldCheck size={12} />}
               {user.role === 'admin' && <UserCog size={12} />}
+              {user.role === 'copilot' && <Headphones size={12} />}
               {roleLabel(user)}
             </span>
           </div>

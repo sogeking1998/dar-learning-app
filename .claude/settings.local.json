@@ -19,7 +19,8 @@
       "Bash(python -c ' *)",
       "mcp__visualize__show_widget",
       "Bash(node erd.js)",
-      "Bash(node erd2.js)"
+      "Bash(node erd2.js)",
+      "Bash(npm run *)"
     ]
   }
 }

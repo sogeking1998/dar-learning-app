@@ -42,14 +42,14 @@ export function MessagesProvider({ children }) {
     let active = true
     const load = () => supabase
       .from('profiles')
-      .select('id, name, division, position, role, last_seen')
+      .select('id, name, division, position, role, gender, last_seen')
       .neq('id', me)
       .then(({ data, error }) => {
         if (error) { console.error('Load directory failed:', error.message); return }
         if (!active) return
         setDirectory((data || [])
           .filter(p => p.name && p.role !== 'superadmin')   // onboarded users, no super admin
-          .map(p => ({ id: p.id, name: p.name, role: roleLabel(p), accountRole: p.role, color: colorFor(p.id), lastSeen: p.last_seen }))
+          .map(p => ({ id: p.id, name: p.name, gender: p.gender, role: roleLabel(p), accountRole: p.role, color: colorFor(p.id), lastSeen: p.last_seen }))
           .sort((a, b) => a.name.localeCompare(b.name)))
       })
     load()
@@ -192,6 +192,7 @@ export function MessagesProvider({ children }) {
       return {
         id: otherId,
         name: u.name || 'Unknown user',
+        gender: u.gender,
         role: u.role || '',
         accountRole: u.accountRole || null,
         color: u.color || colorFor(otherId),

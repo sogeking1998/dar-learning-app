@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { User, Mail, Briefcase, Building2, Calendar, Check, X, Pencil } from 'lucide-react'
-import { useUser, initials } from '../UserContext'
+import { User, Mail, Briefcase, Building2, Calendar, Users, Check, X, Pencil } from 'lucide-react'
+import { useUser } from '../UserContext'
+import Avatar from '../components/Avatar'
+import GenderSelect from '../components/GenderSelect'
 import './Profile.css'
 
 const DIVISIONS = ['PBD', 'LTS', 'AJD', 'Admin']
@@ -28,6 +30,7 @@ export default function Profile() {
       email: form.email.trim(),
       position: form.position.trim(),
       division: form.division,
+      gender: form.gender,
     })
     setEditing(false)
     setSaved(true)
@@ -54,7 +57,7 @@ export default function Profile() {
       {/* Identity banner */}
       <div className="pf-banner">
         <div className="pf-banner-mesh" />
-        <div className="pf-avatar">{initials(user.name)}</div>
+        <Avatar name={user.name} gender={user.gender} className="pf-avatar" />
         <div className="pf-banner-info">
           <h2 className="pf-name">{user.name}</h2>
           <p className="pf-position">{user.position}</p>
@@ -93,6 +96,10 @@ export default function Profile() {
                 {DIVISIONS.map(d => <option key={d} value={d}>{d} — {DIV_NAMES[d]}</option>)}
               </select>
             } />
+
+          <Field icon={Users} label="Gender" editing={editing}
+            value={user.gender ? (user.gender === 'male' ? 'Male' : 'Female') : 'Not set'}
+            input={<GenderSelect value={form.gender} onChange={v => set('gender', v)} />} />
 
           <Field icon={Calendar} label="Date Joined" editing={false} value={joined} input={null} />
         </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { useMessages } from '../MessagesContext'
-import { initials } from '../UserContext'
+import Avatar from './Avatar'
 import './MessageNotifier.css'
 
 // App-wide toast that pops top-right when a new message arrives,
@@ -20,6 +20,7 @@ export default function MessageNotifier() {
     setCard({
       key: notice.key,
       name: sender?.name || 'New message',
+      gender: sender?.gender,
       color: sender?.color || 'c-green',
       text: notice.text,
     })
@@ -34,7 +35,7 @@ export default function MessageNotifier() {
 
   return (
     <div key={card.key} className="msg-notif" onClick={open} role="button" tabIndex={0}>
-      <div className={`msg-notif-avatar ${card.color}`}>{initials(card.name)}</div>
+      <Avatar name={card.name} gender={card.gender} className={`msg-notif-avatar ${card.color}`} />
       <div className="msg-notif-body">
         <p className="msg-notif-name">{card.name}</p>
         <p className="msg-notif-text">{card.text}</p>

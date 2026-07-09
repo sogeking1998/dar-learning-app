@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { User, Briefcase, Building2, PartyPopper } from 'lucide-react'
 import { useUser } from '../UserContext'
+import GenderSelect from './GenderSelect'
 import './OnboardingModal.css'
 
 const DIVISIONS = [
@@ -15,6 +16,7 @@ export default function OnboardingModal() {
   const [name, setName] = useState('')
   const [position, setPosition] = useState('')
   const [division, setDivision] = useState('')
+  const [gender, setGender] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -22,7 +24,7 @@ export default function OnboardingModal() {
     e.preventDefault()
     setError('')
 
-    if (!name.trim() || !position.trim() || !division) {
+    if (!name.trim() || !position.trim() || !division || !gender) {
       setError('Please fill in all fields.')
       return
     }
@@ -32,6 +34,7 @@ export default function OnboardingModal() {
       name: name.trim(),
       position: position.trim(),
       division,
+      gender,
     })
     setSaving(false)
     // Once `name` is set, needsOnboarding becomes false and this modal unmounts.
@@ -88,6 +91,11 @@ export default function OnboardingModal() {
                 <option key={d.code} value={d.code}>{d.code} — {d.name}</option>
               ))}
             </select>
+          </div>
+
+          <div className="ob-field">
+            <label>Gender</label>
+            <GenderSelect value={gender} onChange={setGender} />
           </div>
 
           <button type="submit" className="ob-btn" disabled={saving}>

@@ -1,18 +1,30 @@
 import { useState, useRef, useEffect } from 'react'
 import { Search, Send, ArrowLeft, Phone, Video, CalendarPlus, MessageSquare, Users, Paperclip, Smile, FileText, X, Trash2 } from 'lucide-react'
-import { initials } from '../UserContext'
 import { useAuth } from '../AuthContext'
 import { useMessages, presenceLabel, EMOJIS, REACTIONS } from '../MessagesContext'
 import { NotoEmoji, renderEmoji } from '../emoji'
 import { getAvailability, createBooking, DEFAULT_WEEKDAYS, DEFAULT_SLOTS } from '../calendarStore'
 import BookingModal from '../components/BookingModal'
 import ConfirmModal from '../components/ConfirmModal'
+import Avatar from '../components/Avatar'
 import { useCall } from '../CallContext'
 import Toast from '../components/Toast'
 import './Messages.css'
 
+// Small account-role tag shown beside a person's name.
+const ROLE_BADGE = {
+  copilot:    { label: 'Co-Pilot', cls: 'rb-copilot' },
+  admin:      { label: 'Admin',    cls: 'rb-admin' },
+  superadmin: { label: 'Admin',    cls: 'rb-admin' },
+}
+const roleBadge = r => ROLE_BADGE[r] || { label: 'Student', cls: 'rb-student' }
+const RoleTag = ({ role }) => {
+  const b = roleBadge(role)
+  return <span className={`msg-rb ${b.cls}`}>{b.label}</span>
+}
+
 export default function Messages() {
-  const { session, isAdmin, isSuperAdmin } = useAuth()
+  const { session, isAdmin, isSuperAdmin, isCopilot } = useAuth()
   const me = session?.user?.id
   const { conversations, users, messagesWith, sendMessage, sendFile, toggleReaction, deleteMessage, markRead } = useMessages()
   const [activeId, setActiveId] = useState(null)
@@ -60,7 +72,7 @@ export default function Messages() {
     return () => { clearTimeout(t); document.removeEventListener('click', onDoc) }
   }, [reactFor])
 
-  const canBook = !isAdmin && !isSuperAdmin   // only employees book meetings
+  const canBook = !isAdmin && !isSuperAdmin && !isCopilot   // only students (employees) book meetings
 
   const startCall = mode => {
     if (active) startCallEngine(active, mode)
@@ -180,13 +192,12 @@ export default function Messages() {
                   className={`msg-convo${c.id === activeId ? ' active' : ''}`}
                   onClick={() => openConvo(c.id)}
                 >
-                  <div className={`msg-avatar ${c.color}`}>
-                    {initials(c.name)}
+                  <Avatar name={c.name} gender={c.gender} className={`msg-avatar ${c.color}`}>
                     {c.online && <span className="msg-online-dot" />}
-                  </div>
+                  </Avatar>
                   <div className="msg-convo-body">
                     <div className="msg-convo-top">
-                      <span className="msg-convo-name">{c.name}</span>
+                      <span className="msg-convo-name">{c.name} <RoleTag role={c.accountRole} /></span>
                       <span className="msg-convo-time">{c.time}</span>
                     </div>
                     <div className="msg-convo-bottom">
@@ -212,13 +223,12 @@ export default function Messages() {
               <p className="msg-people-head">{onlineCount} online · {users.length} members</p>
               {peopleFiltered.map(u => (
                 <button key={u.id} className="msg-person" onClick={() => startChat(u)}>
-                  <div className={`msg-avatar ${u.color}`}>
-                    {initials(u.name)}
+                  <Avatar name={u.name} gender={u.gender} className={`msg-avatar ${u.color}`}>
                     {u.online && <span className="msg-online-dot" />}
-                  </div>
+                  </Avatar>
                   <div className="msg-convo-body">
                     <span className="msg-convo-name">{u.name}</span>
-                    <span className="msg-person-role">{u.role}</span>
+                    <span className="msg-person-role">{roleBadge(u.accountRole).label}</span>
                   </div>
                   <span className={`msg-presence${u.online ? ' on' : ''}`}>
                     <span className="msg-presence-dot" />{presenceLabel(u.online, u.lastSeen)}
@@ -244,12 +254,11 @@ export default function Messages() {
                 <button className="msg-back" onClick={() => setThreadOpenMobile(false)} aria-label="Back">
                   <ArrowLeft size={18} />
                 </button>
-                <div className={`msg-avatar sm ${active.color}`}>
-                  {initials(active.name)}
+                <Avatar name={active.name} gender={active.gender} className={`msg-avatar sm ${active.color}`}>
                   {active.online && <span className="msg-online-dot" />}
-                </div>
+                </Avatar>
                 <div className="msg-thread-info">
-                  <span className="msg-thread-name">{active.name}</span>
+                  <span className="msg-thread-name">{active.name} <RoleTag role={active.accountRole} /></span>
                   <span className="msg-thread-status">
                     {active.online
                       ? <><span className="status-dot" /> Online now</>
@@ -257,7 +266,7 @@ export default function Messages() {
                   </span>
                 </div>
                 <div className="msg-thread-actions">
-                  {canBook && active.accountRole === 'admin' && (
+                  {canBook && active.accountRole === 'copilot' && (
                     <button className="msg-book-btn" onClick={openBooking}>
                       <CalendarPlus size={15} /> <span>Book a Meeting</span>
                     </button>

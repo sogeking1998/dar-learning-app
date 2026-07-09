@@ -5,7 +5,7 @@ import { useAuth } from './AuthContext'
 const UserContext = createContext(null)
 
 // Columns in the `profiles` table that the app is allowed to edit.
-const EDITABLE_COLS = ['name', 'email', 'division', 'position']
+const EDITABLE_COLS = ['name', 'email', 'division', 'position', 'gender']
 
 export function UserProvider({ children }) {
   const { session } = useAuth()
@@ -29,6 +29,7 @@ export function UserProvider({ children }) {
           email: data?.email || session.user.email || '',
           division: data?.division || '',
           position: data?.position || '',
+          gender: data?.gender || '',
           joined: data?.joined || '',
         })
         setLoading(false)

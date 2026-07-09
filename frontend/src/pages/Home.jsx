@@ -132,7 +132,7 @@ export default function Home() {
       </div>
 
       {/* ── QUICK LINKS ── */}
-      <section className="hsec">
+      <section className="hsec hsec-ql">
         <div className="sec-hd">
           <h2 className="sec-title"><Link2 size={16} /> Quick Links</h2>
         </div>
