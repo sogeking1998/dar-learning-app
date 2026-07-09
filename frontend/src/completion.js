@@ -18,8 +18,11 @@ export function sessionCompletion(course, { results = {}, submissions = {}, vide
   // Done when every uploaded video for the session has been watched to the end.
   const videoDone = !hasVideos || courseVideos.every(v => videoProg[v.id]?.completed)
   const taskDone = !hasTasks || courseTasks.every(t => submissions[t.id])
-  const preDone = examPassed(results[`${course.id}-pre`])
-  const postDone = examPassed(results[`${course.id}-post`])
+  // Pre-test is ungraded; the post-test is scored but completion only needs
+  // both to be taken (post stays locked until the pre-test is done — enforced
+  // in the exam UI). Change postDone to examPassed() to require passing instead.
+  const preDone = !!results[`${course.id}-pre`]
+  const postDone = !!results[`${course.id}-post`]
   // Only count requirements that actually exist for this session — otherwise a
   // session with no video/tasks would look "half done" before anyone starts it.
   const items = [preDone, postDone]

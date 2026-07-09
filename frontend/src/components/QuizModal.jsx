@@ -51,6 +51,7 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
   }, [course.id, type]) // eslint-disable-line
 
   const label = type === 'pre' ? 'Pre-Test' : 'Post-Test'
+  const graded = type !== 'pre'   // pre-tests are taken for readiness, not scored
   const total = questions.length
   const answered = questions.filter(q => answers[q.id] != null).length
   const score = questions.filter(q => answers[q.id] === q.answer).length
@@ -117,7 +118,7 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
     const chosen = answers[qq.id] === i
     let cls = 'quiz-choice'
     let tag = null
-    if (submitted) {
+    if (submitted && graded) {
       if (i === qq.answer) {
         // The right option: solid green only if the user actually picked it,
         // otherwise show it as the answer key without implying they got it.
@@ -133,6 +134,7 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
         tag = <span className="quiz-tag qt-wrong"><XCircle size={13} /> Your answer</span>
       }
     } else if (chosen) {
+      // Ungraded review (pre-test) or the live view: just mark the chosen option.
       cls += ' qc-selected'
     }
     return (
@@ -158,12 +160,21 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
           )}
         </header>
 
-        {submitted && !loading && (
+        {submitted && !loading && graded && (
           <div className={`quiz-result ${passed ? 'qr-pass' : 'qr-fail'}`}>
             <Award size={26} />
             <div>
               <p className="quiz-result-score">{score} / {total} correct · {pct}%</p>
               <p className="quiz-result-msg">{passed ? `Great job — you passed (${PASS_PCT}% required)!` : `You need at least ${PASS_PCT}% to complete this — retake to pass.`}</p>
+            </div>
+          </div>
+        )}
+        {submitted && !loading && !graded && (
+          <div className="quiz-result qr-pass">
+            <CheckCircle2 size={26} />
+            <div>
+              <p className="quiz-result-score">Pre-Test completed</p>
+              <p className="quiz-result-msg">Thanks — this one isn’t scored. The Post-Test is now unlocked.</p>
             </div>
           </div>
         )}
@@ -246,7 +257,9 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
         {/* Footer — review */}
         {!loading && total > 0 && submitted && (
           <footer className="quiz-foot">
-            <span className="quiz-final-score">Your score: {score} of {total} correct ({pct}%)</span>
+            <span className="quiz-final-score">
+              {graded ? `Your score: ${score} of ${total} correct (${pct}%)` : `Pre-Test completed · ${answered} of ${total} answered`}
+            </span>
             <div className="quiz-foot-btns">
               <button className="quiz-retake" onClick={retake}><RotateCcw size={14} /> Retake</button>
               <button className="quiz-done" onClick={onClose}>Done</button>

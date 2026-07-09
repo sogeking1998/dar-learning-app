@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient'
 import Avatar from '../components/Avatar'
 import Toast from '../components/Toast'
 import AddStudentModal from '../components/AddStudentModal'
+import StudentProgressModal from '../components/StudentProgressModal'
 
 const DIVISIONS = ['PBD', 'LTS', 'AJD', 'Admin']
 
@@ -15,6 +16,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [selected, setSelected] = useState(null)
   const [toast, setToast] = useState(null)
 
   const load = async () => {
@@ -97,7 +99,7 @@ export default function AdminUsers() {
             </thead>
             <tbody>
               {visible.map(s => (
-                <tr key={s.id}>
+                <tr key={s.id} className="au-row" onClick={() => setSelected(s)}>
                   <td>
                     <div className="admin-emp">
                       <Avatar name={s.name} gender={s.gender} className="admin-emp-avatar" />
@@ -107,7 +109,7 @@ export default function AdminUsers() {
                       </div>
                     </div>
                   </td>
-                  <td><span className="admin-div">{s.division || '—'}</span></td>
+                  <td className="au-division">{s.division || '—'}</td>
                   <td>{s.position || '—'}</td>
                   <td>{fmtDate(s.joined)}</td>
                 </tr>
@@ -120,6 +122,10 @@ export default function AdminUsers() {
           </table>
         </div>
       </div>
+
+      {selected && (
+        <StudentProgressModal student={selected} onClose={() => setSelected(null)} />
+      )}
 
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
 

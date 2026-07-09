@@ -180,7 +180,7 @@ export default function SessionDetail() {
         </div>
         <div className="sd-stat">
           <FileText size={20} className="sd-stat-ic icon-pretest" />
-          <div><p className="sd-stat-num">{preResult ? `${preResult.pct}%` : '—'}</p><p className="sd-stat-lbl">Pre-Test</p></div>
+          <div><p className="sd-stat-num">{preResult ? 'Done' : '—'}</p><p className="sd-stat-lbl">Pre-Test</p></div>
         </div>
         <div className="sd-stat">
           <FileText size={20} className="sd-stat-ic icon-posttest" />
@@ -268,7 +268,7 @@ export default function SessionDetail() {
             <div className="sd-test-info">
               <p className="sd-item-title">Pre-Test</p>
               {preResult
-                ? <p className="sd-item-sub">Score: {preResult.score}/{preResult.total} · <b>{preResult.pct}%</b></p>
+                ? <p className="sd-item-sub"><b>Completed</b> · not scored</p>
                 : <p className="sd-item-sub">Tap to start</p>}
             </div>
             {preResult && <CheckCircle2 size={15} className="sd-test-check" />}

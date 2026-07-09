@@ -366,6 +366,11 @@
 .au-add-btn:hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 12px 22px -10px rgba(11, 81, 50, 0.9); }
 .au-add-btn:active { transform: scale(0.98); }
 
+/* Clickable student rows (open the progress modal) + plain division text */
+.au-row { cursor: pointer; transition: background 0.12s; }
+.au-row:hover td { background: #f7f9f8; }
+.au-division { font-weight: 600; color: #374151; }
+
 /* Total Users tile + a single "per division" breakdown card */
 .dash-stats.au-stats { grid-template-columns: minmax(230px, 300px) 1fr; }
 .au-div-card {
