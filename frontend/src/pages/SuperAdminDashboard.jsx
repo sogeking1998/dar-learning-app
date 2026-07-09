@@ -9,8 +9,7 @@ import DarLogo from '../components/DarLogo'
 import ConfirmModal from '../components/ConfirmModal'
 import Avatar from '../components/Avatar'
 import Toast from '../components/Toast'
-import AddAdminModal from '../components/AddAdminModal'
-import AddCopilotModal from '../components/AddCopilotModal'
+import AddUserModal from '../components/AddUserModal'
 import './AdminDashboard.css'
 
 const roleLabel = p =>
@@ -24,7 +23,6 @@ export default function SuperAdminDashboard() {
   const { signOut } = useAuth()
   const [confirmOut, setConfirmOut] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
-  const [showAddCopilot, setShowAddCopilot] = useState(false)
   const [toast, setToast] = useState(null)
   const [profiles, setProfiles] = useState([])
   const [loading, setLoading] = useState(true)
@@ -60,10 +58,7 @@ export default function SuperAdminDashboard() {
         </div>
         <div className="sa-topbar-actions">
           <button className="sa-add-btn" onClick={() => setShowAdd(true)}>
-            <UserPlus size={16} /> <span>Add Admin</span>
-          </button>
-          <button className="sa-add-btn" onClick={() => setShowAddCopilot(true)}>
-            <Headphones size={16} /> <span>Add Co-pilot</span>
+            <UserPlus size={16} /> <span>Add User</span>
           </button>
           <button className="sa-signout" onClick={() => setConfirmOut(true)}>
             <LogOut size={16} /> <span>Sign out</span>
@@ -78,22 +73,12 @@ export default function SuperAdminDashboard() {
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
 
       {showAdd && (
-        <AddAdminModal
+        <AddUserModal
           onClose={() => setShowAdd(false)}
-          onCreated={email => {
+          onCreated={(email, role) => {
             setShowAdd(false)
-            setToast({ type: 'success', message: `Admin account created for ${email}. Default password: 123456.` })
-            load()
-          }}
-        />
-      )}
-
-      {showAddCopilot && (
-        <AddCopilotModal
-          onClose={() => setShowAddCopilot(false)}
-          onCreated={email => {
-            setShowAddCopilot(false)
-            setToast({ type: 'success', message: `Co-pilot account created for ${email}. Default password: 123456.` })
+            const label = role === 'copilot' ? 'Co-pilot' : 'Admin'
+            setToast({ type: 'success', message: `${label} account created for ${email}. Default password: 123456.` })
             load()
           }}
         />
