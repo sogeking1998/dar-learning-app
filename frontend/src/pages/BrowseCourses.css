@@ -142,6 +142,8 @@
 .task-badge { flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 4px 11px; border-radius: 99px; }
 .task-badge-done { background: var(--g100); color: var(--g700); }
 .task-badge-todo { background: var(--surface); color: var(--t3); border: 1px solid var(--bdr); }
+.task-badge-review { background: #fef3c7; color: #b45309; }
+.task-badge-failed { background: #fee2e2; color: #dc2626; }
 
 .mat-info { display: flex; align-items: center; gap: 14px; }
 .mat-icon { flex-shrink: 0; }

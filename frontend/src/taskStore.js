@@ -48,11 +48,14 @@ export async function deleteTask(id) {
 }
 
 // ── Submissions ──
+// A submission only counts as complete once an admin has marked it 'passed'.
+export const taskApproved = sub => sub?.status === 'passed'
+
 export async function getSubmissionsForUser(userId) {
   if (!userId) return {}
   const { data, error } = await supabase
     .from('task_submissions')
-    .select('task_id, file_name, file_path, submitted_at')
+    .select('task_id, file_name, file_path, submitted_at, status, reviewed_at, reviewed_by')
     .eq('user_id', userId)
   if (error) { console.error('Load submissions failed:', error.message); return {} }
   const map = {}
@@ -67,11 +70,27 @@ export async function submitTask(userId, taskId, file) {
   const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true })
   if (upErr) return { error: upErr }
 
+  // A new upload always resets the review — the admin must re-check it.
   const { error } = await supabase.from('task_submissions').upsert(
-    { user_id: userId, task_id: taskId, file_path: path, file_name: file.name, submitted_at: new Date().toISOString() },
+    {
+      user_id: userId, task_id: taskId, file_path: path, file_name: file.name,
+      submitted_at: new Date().toISOString(),
+      status: 'pending', reviewed_at: null, reviewed_by: null,
+    },
     { onConflict: 'user_id,task_id' }
   )
   return { error, path }
+}
+
+// Admin review: mark a student's submission passed or failed.
+export async function reviewSubmission(userId, taskId, status, reviewerId) {
+  const { data, error } = await supabase.from('task_submissions')
+    .update({ status, reviewed_at: new Date().toISOString(), reviewed_by: reviewerId })
+    .eq('user_id', userId).eq('task_id', taskId)
+    .select('task_id, file_name, file_path, submitted_at, status, reviewed_at, reviewed_by')
+    .maybeSingle()
+  if (error) console.error('Review submission failed:', error.message)
+  return { data, error }
 }
 
 // Private bucket — generate a short-lived link to view/open the submitted file.

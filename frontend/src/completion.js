@@ -2,7 +2,7 @@
 // video watched + task submitted + pre-test + post-test.
 import { useState, useEffect } from 'react'
 import { getResultsForUser } from './examStore'
-import { getSubmissionsForUser, getTasksMap } from './taskStore'
+import { getSubmissionsForUser, getTasksMap, taskApproved } from './taskStore'
 import { getVideoProgress } from './progressStore'
 import { getAllSessionVideos } from './videoStore'
 
@@ -17,7 +17,8 @@ export function sessionCompletion(course, { results = {}, submissions = {}, vide
   const hasTasks = courseTasks.length > 0
   // Done when every uploaded video for the session has been watched to the end.
   const videoDone = !hasVideos || courseVideos.every(v => videoProg[v.id]?.completed)
-  const taskDone = !hasTasks || courseTasks.every(t => submissions[t.id])
+  // A task is "done" only when the admin has approved the submission (passed).
+  const taskDone = !hasTasks || courseTasks.every(t => taskApproved(submissions[t.id]))
   // Pre-test is ungraded; the post-test is scored but completion only needs
   // both to be taken (post stays locked until the pre-test is done — enforced
   // in the exam UI). Change postDone to examPassed() to require passing instead.

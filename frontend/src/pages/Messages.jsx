@@ -378,6 +378,7 @@ export default function Messages() {
             ...active,
             availableDays: bookingAvail?.weekdays || DEFAULT_WEEKDAYS,
             slots: bookingAvail?.slots || DEFAULT_SLOTS,
+            dateSlots: bookingAvail?.dateSlots || {},
           }}
           onClose={() => setShowBooking(false)}
           onConfirm={handleBooking}

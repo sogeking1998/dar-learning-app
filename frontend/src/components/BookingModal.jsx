@@ -11,7 +11,8 @@ const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')
 
 export default function BookingModal({ conversation, onClose, onConfirm }) {
   const today = startOfDay(new Date())
-  const slots = conversation.slots || []
+  const defaultSlots = conversation.slots || []
+  const dateSlots = conversation.dateSlots || {}
   const availableDays = conversation.availableDays || []
 
   // A day is bookable if it's today or later AND falls on one of the admin's
@@ -34,6 +35,10 @@ export default function BookingModal({ conversation, onClose, onConfirm }) {
     getBookedSlots(conversation.id, iso(selDate)).then(s => { if (active) setBooked(s) })
     return () => { active = false }
   }, [selDate, conversation.id])
+
+  // Open hours for the chosen date: its per-date override if the admin set one,
+  // otherwise the default template. An empty override means no hours that day.
+  const slots = selDate ? (dateSlots[iso(selDate)] ?? defaultSlots) : defaultSlots
 
   // Expand every existing booking (a "9:00 AM – 10:30 AM" range, or a legacy
   // single "9:00 AM") into the set of 30-min blocks it occupies. A range A–B
@@ -146,6 +151,12 @@ export default function BookingModal({ conversation, onClose, onConfirm }) {
                 <p>Select an available day to choose a meeting time.</p>
               </div>
             ) : (
+              slots.length === 0 ? (
+                <div className="bk-slots-empty">
+                  <Clock size={26} />
+                  <p>No open times on this day. Please pick another date.</p>
+                </div>
+              ) : (
               <>
                 <p className="bk-slots-date">{fmtFull(selDate)}</p>
                 <p className="bk-slots-label">
@@ -177,6 +188,7 @@ export default function BookingModal({ conversation, onClose, onConfirm }) {
                   })}
                 </div>
               </>
+              )
             )}
           </div>
         </div>

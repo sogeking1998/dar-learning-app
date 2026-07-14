@@ -7,7 +7,7 @@ import {
 import { useCourses } from '../courseStore'
 import { useUser } from '../UserContext'
 import { getResultsForUser } from '../examStore'
-import { getTasksMap, getSubmissionsForUser } from '../taskStore'
+import { getTasksMap, getSubmissionsForUser, taskApproved } from '../taskStore'
 import { getVideoProgress } from '../progressStore'
 import { getAllSessionVideos, readVideoDuration } from '../videoStore'
 import { getMaterialsMap } from '../materialsStore'
@@ -143,7 +143,7 @@ export default function BrowseCourses() {
     const hasVideos = courseVideos.length > 0
     const hasTasks = courseTasks.length > 0
     const videoDone = !hasVideos || courseVideos.every(v => videoProg[v.id]?.completed)
-    const taskDone = !hasTasks || courseTasks.every(t => submissions[t.id])
+    const taskDone = !hasTasks || courseTasks.every(t => taskApproved(submissions[t.id]))
     const preDone = examPassed(results[`${course.id}-pre`])
     const postDone = examPassed(results[`${course.id}-post`])
     // Only count requirements that actually exist for this session.
@@ -326,7 +326,7 @@ export default function BrowseCourses() {
                     {/* Tasks */}
                     {(() => {
                       const courseTasks = tasks[course.id] || []
-                      const doneCount = courseTasks.filter(t => submissions[t.id]).length
+                      const doneCount = courseTasks.filter(t => taskApproved(submissions[t.id])).length
                       const tOpen = !!taskOpen[course.id]
                       return (
                         <div className="video-block">
@@ -353,19 +353,24 @@ export default function BrowseCourses() {
                             <ul className="task-list">
                               {courseTasks.map(t => {
                                 const sub = submissions[t.id]
+                                const st = sub?.status
                                 return (
                                   <li key={t.id}>
                                     <button type="button" className="task-item task-item-btn" onClick={() => setTaskModal(t)}>
-                                      <span className={`task-ic${sub ? ' done' : ''}`}>
-                                        {sub ? <CheckCircle2 size={16} /> : <FileText size={15} />}
+                                      <span className={`task-ic${st === 'passed' ? ' done' : ''}`}>
+                                        {st === 'passed' ? <CheckCircle2 size={16} /> : <FileText size={15} />}
                                       </span>
                                       <div className="task-body">
                                         <p className="task-title">{t.title}</p>
                                         {t.description && <p className="task-desc">{t.description}</p>}
                                       </div>
-                                      {sub
-                                        ? <span className="task-badge task-badge-done">Submitted</span>
-                                        : <span className="task-badge task-badge-todo">Submit</span>}
+                                      {st === 'passed'
+                                        ? <span className="task-badge task-badge-done">Passed</span>
+                                        : st === 'failed'
+                                          ? <span className="task-badge task-badge-failed">Needs revision</span>
+                                          : sub
+                                            ? <span className="task-badge task-badge-review">In review</span>
+                                            : <span className="task-badge task-badge-todo">Submit</span>}
                                     </button>
                                   </li>
                                 )

@@ -161,14 +161,27 @@ create table if not exists public.task_submissions (
   file_name    text,
   file_path    text,
   submitted_at timestamptz not null default now(),
+  status       text not null default 'pending',   -- 'pending' | 'passed' | 'failed' (admin review)
+  reviewed_at  timestamptz,
+  reviewed_by  uuid references auth.users(id),
   unique (user_id, task_id)
 );
+-- Migration for existing databases (safe to re-run):
+alter table public.task_submissions
+  add column if not exists status      text not null default 'pending',
+  add column if not exists reviewed_at timestamptz,
+  add column if not exists reviewed_by uuid references auth.users(id);
+
 alter table public.task_submissions enable row level security;
 create policy "users manage own submissions"
   on public.task_submissions for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy "staff read all submissions"
   on public.task_submissions for select to authenticated using (public.is_staff());
+-- Staff (admin/superadmin) can review any submission (set passed/failed).
+create policy "staff review submissions"
+  on public.task_submissions for update to authenticated
+  using (public.is_staff()) with check (public.is_staff());
 
 -- ---------- session_videos (url = Cloudflare R2 link; course_id 0 = welcome) ----------
 create table if not exists public.session_videos (
@@ -303,9 +316,13 @@ grant execute on function public.booked_slots(uuid, date) to authenticated;
 create table if not exists public.meeting_availability (
   user_id    uuid primary key references auth.users(id) on delete cascade,
   weekdays   int[]  not null default '{}',
-  slots      text[] not null default '{}',
+  slots      text[] not null default '{}',   -- default weekly hours template
+  date_slots jsonb  not null default '{}',   -- per-date overrides: { 'YYYY-MM-DD': ['8:00 AM', ...] }
   updated_at timestamptz not null default now()
 );
+-- Migration for existing databases (safe to re-run):
+alter table public.meeting_availability
+  add column if not exists date_slots jsonb not null default '{}';
 alter table public.meeting_availability enable row level security;
 create policy "availability readable by signed-in users"
   on public.meeting_availability for select to authenticated using (true);

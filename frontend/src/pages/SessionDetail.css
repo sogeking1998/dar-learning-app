@@ -150,6 +150,8 @@
 }
 .sd-badge-done { color: var(--g700); }
 .sd-badge-todo { color: #2563eb; }
+.sd-badge-review { color: #b45309; }
+.sd-badge-failed { color: #dc2626; }
 
 .sd-btn {
   font-size: 12px; font-weight: 800; padding: 8px 15px; border-radius: 8px;

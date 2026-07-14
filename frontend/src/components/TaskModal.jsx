@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, UploadCloud, FileText, CheckCircle2, ListChecks, Trash2, ExternalLink } from 'lucide-react'
+import { X, UploadCloud, FileText, CheckCircle2, XCircle, Clock, ListChecks, Trash2, ExternalLink } from 'lucide-react'
 import { submitTask, getSubmissionUrl, deleteSubmission } from '../taskStore'
 import ConfirmModal from './ConfirmModal'
 import './TaskModal.css'
@@ -11,6 +11,7 @@ export default function TaskModal({ task, userId, submission, onClose, onSubmitt
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [done, setDone] = useState(!!submission)
+  const [status, setStatus] = useState(submission?.status || null)
   const [savedName, setSavedName] = useState(submission?.file_name || null)
   const [savedPath, setSavedPath] = useState(submission?.file_path || null)
   const [opening, setOpening] = useState(false)
@@ -41,6 +42,7 @@ export default function TaskModal({ task, userId, submission, onClose, onSubmitt
     setSavedPath(path)
     setFile(null)
     setDone(true)
+    setStatus('pending')   // a new upload goes back to awaiting admin review
     if (onSubmitted) onSubmitted()
   }
 
@@ -60,6 +62,7 @@ export default function TaskModal({ task, userId, submission, onClose, onSubmitt
     setDeleting(false)
     if (error) { setError(error.message); return }
     setDone(false)
+    setStatus(null)
     setSavedName(null)
     setSavedPath(null)
     if (onSubmitted) onSubmitted()
@@ -89,10 +92,16 @@ export default function TaskModal({ task, userId, submission, onClose, onSubmitt
         </div>
 
         {done && (
-          <div className="task-submitted">
+          <div className={`task-submitted status-${status || 'pending'}`}>
             <div className="task-submitted-top">
-              <CheckCircle2 size={18} />
-              <p className="task-submitted-t">Task submitted</p>
+              {status === 'passed' ? <CheckCircle2 size={18} />
+                : status === 'failed' ? <XCircle size={18} />
+                : <Clock size={18} />}
+              <p className="task-submitted-t">
+                {status === 'passed' ? 'Approved by admin'
+                  : status === 'failed' ? 'Needs revision — please resubmit'
+                  : 'Submitted — awaiting admin review'}
+              </p>
             </div>
             <div className="task-file-chip">
               <button type="button" className="task-file-open" onClick={openFile} disabled={opening} title="Open file">
@@ -122,7 +131,7 @@ export default function TaskModal({ task, userId, submission, onClose, onSubmitt
         <div className="task-actions">
           <button className="task-btn task-btn-cancel" onClick={onClose}>Close</button>
           <button className="task-btn task-btn-upload" onClick={upload} disabled={!file || busy}>
-            {busy ? 'Uploading…' : (done ? 'Resubmit' : 'Upload & Complete')}
+            {busy ? 'Uploading…' : (done ? 'Resubmit' : 'Upload')}
           </button>
         </div>
       </div>

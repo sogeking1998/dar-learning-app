@@ -7,7 +7,7 @@ import {
 import { getCourses } from '../courseStore'
 import { useUser } from '../UserContext'
 import { getResultsForUser } from '../examStore'
-import { getTasksForCourse, getSubmissionsForUser } from '../taskStore'
+import { getTasksForCourse, getSubmissionsForUser, taskApproved } from '../taskStore'
 import { getVideoProgress } from '../progressStore'
 import { getSessionVideosForCourse, readVideoDuration, formatVideoDuration } from '../videoStore'
 import { getMaterialsForCourse } from '../materialsStore'
@@ -135,11 +135,11 @@ export default function SessionDetail() {
   const watchedCount = videos.filter(v => videoProg[v.id]?.completed).length
   const totalVideoSecs = videos.reduce((sum, v) => sum + (durations[v.id] || 0), 0)
   const videoDurationLabel = formatVideoDuration(totalVideoSecs)
-  const taskDoneCount = tasks.filter(t => submissions[t.id]).length
+  const taskDoneCount = tasks.filter(t => taskApproved(submissions[t.id])).length
 
   // Same completion logic as the Browse Courses card.
   const videoDone = !course.hasVideo || videos.length === 0 || videos.every(v => videoProg[v.id]?.completed)
-  const taskDone = tasks.length === 0 || tasks.every(t => submissions[t.id])
+  const taskDone = tasks.length === 0 || tasks.every(t => taskApproved(submissions[t.id]))
   const items = [videoDone, taskDone, !!preResult, !!postResult]
   const pct = Math.round((items.filter(Boolean).length / items.length) * 100)
 
@@ -238,20 +238,25 @@ export default function SessionDetail() {
           <ul className="sd-list">
             {tasks.map(t => {
               const sub = submissions[t.id]
+              const st = sub?.status
               return (
                 <li key={t.id} className="sd-item sd-item-btn" onClick={() => setTaskModal(t)}>
                   <div className="sd-item-info">
-                    <span className={`sd-task-ic${sub ? ' done' : ''}`}>
-                      {sub ? <CheckCircle2 size={16} /> : <FileText size={15} />}
+                    <span className={`sd-task-ic${st === 'passed' ? ' done' : ''}`}>
+                      {st === 'passed' ? <CheckCircle2 size={16} /> : <FileText size={15} />}
                     </span>
                     <div>
                       <p className="sd-item-title">{t.title}</p>
                       {t.description && <p className="sd-item-sub">{t.description}</p>}
                     </div>
                   </div>
-                  <span className={`sd-badge ${sub ? 'sd-badge-done' : 'sd-badge-todo'}`}>
-                    {sub ? 'Submitted' : 'Submit'}
-                  </span>
+                  {st === 'passed'
+                    ? <span className="sd-badge sd-badge-done">Passed</span>
+                    : st === 'failed'
+                      ? <span className="sd-badge sd-badge-failed">Needs revision</span>
+                      : sub
+                        ? <span className="sd-badge sd-badge-review">In review</span>
+                        : <span className="sd-badge sd-badge-todo">Submit</span>}
                 </li>
               )
             })}
@@ -268,7 +273,7 @@ export default function SessionDetail() {
             <div className="sd-test-info">
               <p className="sd-item-title">Pre-Test</p>
               {preResult
-                ? <p className="sd-item-sub"><b>Completed</b> · not scored</p>
+                ? <p className="sd-item-sub"><b>Completed</b></p>
                 : <p className="sd-item-sub">Tap to start</p>}
             </div>
             {preResult && <CheckCircle2 size={15} className="sd-test-check" />}

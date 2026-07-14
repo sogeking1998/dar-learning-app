@@ -15,27 +15,30 @@ export function buildTimes(startH, endH) {
   return out
 }
 
-export const DEFAULT_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]       // every day by default
+export const DEFAULT_WEEKDAYS = [1, 2, 3, 4, 5]             // weekdays only (no weekends)
 export const DEFAULT_SLOTS = buildTimes(8, 17)              // 8:00 AM – 5:00 PM, 30-min
 
-// An admin's availability (weekdays + time slots). Falls back to sensible defaults.
+// An admin's availability. `slots` is the default weekly template; `dateSlots`
+// holds per-date overrides ({ 'YYYY-MM-DD': [...slots] }) — a date listed there
+// uses exactly those hours, dates not listed fall back to the default template.
 export async function getAvailability(userId) {
-  if (!userId) return { weekdays: DEFAULT_WEEKDAYS, slots: DEFAULT_SLOTS }
+  if (!userId) return { weekdays: DEFAULT_WEEKDAYS, slots: DEFAULT_SLOTS, dateSlots: {} }
   const { data, error } = await supabase
     .from('meeting_availability')
-    .select('weekdays, slots')
+    .select('weekdays, slots, date_slots')
     .eq('user_id', userId)
     .maybeSingle()
   if (error) { console.error('Load availability failed:', error.message) }
   return {
     weekdays: data?.weekdays?.length ? data.weekdays : DEFAULT_WEEKDAYS,
     slots: data?.slots?.length ? data.slots : DEFAULT_SLOTS,
+    dateSlots: data?.date_slots || {},
   }
 }
 
-export async function saveAvailability(userId, weekdays, slots) {
+export async function saveAvailability(userId, weekdays, slots, dateSlots = {}) {
   const { error } = await supabase.from('meeting_availability').upsert(
-    { user_id: userId, weekdays, slots, updated_at: new Date().toISOString() },
+    { user_id: userId, weekdays, slots, date_slots: dateSlots, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' }
   )
   if (error) console.error('Save availability failed:', error.message)

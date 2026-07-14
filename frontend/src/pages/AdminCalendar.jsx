@@ -8,9 +8,12 @@ import { getAvailability, saveAvailability, getAdminBookings, buildTimes } from 
 const WD_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
+// Sunday first, then the week through Saturday. Weekends are opt-in and styled apart (not green).
 const DAY_CIRCLES = [
-  { i: 0, l: 'Su' }, { i: 1, l: 'Mo' }, { i: 2, l: 'Tu' }, { i: 3, l: 'We' },
-  { i: 4, l: 'Th' }, { i: 5, l: 'Fr' }, { i: 6, l: 'Sa' },
+  { i: 0, l: 'Su', weekend: true },
+  { i: 1, l: 'Mo' }, { i: 2, l: 'Tu' }, { i: 3, l: 'We' },
+  { i: 4, l: 'Th' }, { i: 5, l: 'Fr' },
+  { i: 6, l: 'Sa', weekend: true },
 ]
 
 const TIME_OPTIONS = buildTimes(8, 17)   // 8:00 AM – 5:00 PM, 30-min
@@ -25,7 +28,8 @@ export default function AdminCalendar() {
   const today = startOfDay(new Date())
 
   const [weekdays, setWeekdays] = useState([])
-  const [slots, setSlots] = useState([])
+  const [slots, setSlots] = useState([])       // default weekly template
+  const [dateSlots, setDateSlots] = useState({}) // per-date overrides { 'YYYY-MM-DD': [...] }
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -39,8 +43,9 @@ export default function AdminCalendar() {
     let active = true
     Promise.all([getAvailability(me), getAdminBookings(me)]).then(([avail, books]) => {
       if (!active) return
-      setWeekdays(avail.weekdays)
+      setWeekdays(avail.weekdays || [])
       setSlots(avail.slots)
+      setDateSlots(avail.dateSlots || {})
       setBookings(books)
       setLoading(false)
     })
@@ -64,19 +69,40 @@ export default function AdminCalendar() {
   const goToday = () => { setView(new Date(today.getFullYear(), today.getMonth(), 1)); setSelDate(today) }
 
   const toggleDay = i => setWeekdays(prev => prev.includes(i) ? prev.filter(d => d !== i) : [...prev, i])
-  const toggleSlot = t => setSlots(prev =>
-    prev.includes(t)
-      ? prev.filter(x => x !== t)
-      : [...prev, t].sort((a, b) => TIME_OPTIONS.indexOf(a) - TIME_OPTIONS.indexOf(b)))
+
+  // ── Hours are edited for the selected date only ──
+  const selKey = iso(selDate)
+  const isCustomDay = Object.prototype.hasOwnProperty.call(dateSlots, selKey)
+  // Effective hours for the selected date: its override if any, else the default template.
+  const daySlots = isCustomDay ? dateSlots[selKey] : slots
+  const setDaySlots = next => setDateSlots(prev => ({ ...prev, [selKey]: next }))
+  const toggleSlot = t => setDaySlots(
+    daySlots.includes(t)
+      ? daySlots.filter(x => x !== t)
+      : [...daySlots, t].sort((a, b) => TIME_OPTIONS.indexOf(a) - TIME_OPTIONS.indexOf(b)))
+  const resetDay = () => setDateSlots(prev => {
+    const next = { ...prev }; delete next[selKey]; return next
+  })
+
   const save = async () => {
     setSaving(true); setSaved(false)
-    const { error } = await saveAvailability(me, weekdays, slots)
+    const { error } = await saveAvailability(me, weekdays, slots, dateSlots)
     setSaving(false)
     if (!error) { setSaved(true); setTimeout(() => setSaved(false), 2500) }
   }
 
   const selBookings = byDate[iso(selDate)] || []
-  const bookedSel = Object.fromEntries(selBookings.map(b => [b.slot, b.employeeName]))
+  // Expand each booking's "1:00 PM – 3:00 PM" range into the 30-min slots it
+  // occupies, so those hours show as booked (not available) for this date.
+  const bookedSel = {}
+  for (const b of selBookings) {
+    const parts = String(b.slot).split('–').map(s => s.trim())
+    const a = TIME_OPTIONS.indexOf(parts[0])
+    if (a < 0) continue
+    let z = parts[1] ? TIME_OPTIONS.indexOf(parts[1]) : a + 1
+    if (z < 0) z = TIME_OPTIONS.length
+    for (let i = a; i < z; i++) bookedSel[TIME_OPTIONS[i]] = b.employeeName
+  }
   const selAvailable = weekdays.includes(selDate.getDay())
   const fmtSel = selDate.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
   const selShort = selDate.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
@@ -168,18 +194,16 @@ export default function AdminCalendar() {
           <CalendarDays size={18} />
           <div>
             <h3>Availability</h3>
-            <p className="cal-avail-desc">Choose the days and times employees can request meetings with you.</p>
+            <p className="cal-avail-desc">Pick the weekdays you take meetings, then set the open hours for each specific date.</p>
           </div>
         </div>
 
         <div className="cal-avail-row">
           {/* Days — circular picker */}
           <div className="cal-avail-col">
-            <div className="cal-label-row">
-              <p className="cal-label">Days</p>
+            <div>
               <div className="cal-quick">
-                <button type="button" onClick={() => setWeekdays([1, 2, 3, 4, 5])}>Weekdays</button>
-                <button type="button" onClick={() => setWeekdays([0, 1, 2, 3, 4, 5, 6])}>All</button>
+                <button type="button" onClick={() => setWeekdays([1, 2, 3, 4, 5])}>All</button>
                 <button type="button" onClick={() => setWeekdays([])}>Clear</button>
               </div>
             </div>
@@ -188,7 +212,7 @@ export default function AdminCalendar() {
                 <button
                   key={d.i}
                   type="button"
-                  className={`av-day-circle${weekdays.includes(d.i) ? ' on' : ''}`}
+                  className={`av-day-circle${d.weekend ? ' weekend' : ''}${weekdays.includes(d.i) ? ' on' : ''}`}
                   onClick={() => toggleDay(d.i)}
                 >
                   {d.l}
@@ -202,18 +226,17 @@ export default function AdminCalendar() {
             </p>
           </div>
 
-          {/* Times — switch list grouped by part of day */}
+          {/* Times — open hours for the selected date only */}
           <div className="cal-avail-col cal-avail-slots">
-            <div className="cal-label-row">
-              <p className="cal-label">Hours <span className="cal-count">{slots.length}</span></p>
+            <div>
               <div className="cal-quick">
-                <button type="button" onClick={() => setSlots([...TIME_OPTIONS])}>All</button>
-                <button type="button" onClick={() => setSlots([])}>Clear</button>
+                <button type="button" onClick={() => setDaySlots([...TIME_OPTIONS])}>All</button>
+                <button type="button" onClick={() => setDaySlots([])}>Clear</button>
               </div>
             </div>
             <div className="av-times">
               {TIME_OPTIONS.map(t => {
-                const on = slots.includes(t)
+                const on = daySlots.includes(t)
                 const bookedBy = bookedSel[t]
                 return (
                   <button

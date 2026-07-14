@@ -465,7 +465,7 @@
 
 .cal-label-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
 .cal-label-row .cal-label { margin: 0; }
-.cal-quick { display: flex; gap: 6px; flex-wrap: wrap; }
+.cal-quick { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
 .cal-quick button {
   font-family: inherit; font-size: 0.72rem; font-weight: 700;
   padding: 5px 11px; border-radius: 99px; cursor: pointer;
@@ -491,6 +491,20 @@
   background: linear-gradient(150deg, #15803d, #1c9e4d); border-color: #15803d; color: #fff;
   box-shadow: 0 5px 13px -5px rgba(21,128,61,0.65);
 }
+/* Weekends are selectable but styled slate, never the green work-week glow. */
+.av-day-circle.weekend:hover { border-color: #cbd5e1; color: #475569; }
+.av-day-circle.weekend.on {
+  background: linear-gradient(150deg, #475569, #64748b); border-color: #475569; color: #fff;
+  box-shadow: 0 5px 13px -5px rgba(71,85,105,0.55);
+}
+
+/* Per-date hours note + reset control */
+.cal-day-hours-note { margin: 2px 0 12px; }
+.cal-reset-day {
+  border: none; background: none; padding: 0; cursor: pointer;
+  font: inherit; font-size: 0.82rem; font-weight: 700; color: #15803d; text-decoration: underline;
+}
+.cal-reset-day:hover { color: #1c9e4d; }
 
 /* Hours — compact switch rows flowing into multiple columns */
 .av-times { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 7px; }
