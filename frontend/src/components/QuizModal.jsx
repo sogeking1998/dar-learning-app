@@ -8,6 +8,29 @@ const QUESTION_SECONDS = 60
 
 const fmtClock = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
+// Fisher–Yates — returns a new, randomly ordered copy.
+function shuffled(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+// Randomize question order and each question's choices, keeping `answer`
+// pointed at the correct choice's new index so scoring stays correct.
+function shuffleQuiz(questions) {
+  return shuffled(questions).map(q => {
+    const order = shuffled(q.choices.map((_, i) => i)) // permutation of choice indices
+    return {
+      ...q,
+      choices: order.map(i => q.choices[i]),
+      answer: order.indexOf(q.answer),
+    }
+  })
+}
+
 // Build an answer map that yields exactly `targetScore` correct answers,
 // used to review an attempt whose per-question answers weren't recorded.
 function reconstruct(questions, targetScore) {
@@ -40,10 +63,12 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
     let active = true
     getQuestions(course.id, type).then(qs => {
       if (!active) return
-      setQuestions(qs)
       if (priorResult) {
+        setQuestions(qs)     // review uses the stored order — don't shuffle
         setAnswers(priorResult.answers || reconstruct(qs, priorResult.score))
         setSubmitted(true)   // reviewing a past attempt → skip the timed flow
+      } else {
+        setQuestions(shuffleQuiz(qs))   // fresh attempt → randomize order & choices
       }
       setLoading(false)
     })
@@ -101,6 +126,7 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
   const start = () => { setCurrent(0); setStarted(true) }
 
   const retake = () => {
+    setQuestions(qs => shuffleQuiz(qs))   // reshuffle order & choices for the retake
     setAnswers({})
     setSubmitted(false)
     setSaveError(null)

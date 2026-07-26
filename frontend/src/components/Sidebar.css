@@ -193,11 +193,13 @@
 /* Unread notification badge */
 .nav-badge {
   margin-left: auto;
+  box-sizing: border-box;
   min-width: 20px; height: 20px; padding: 0 6px;
   border-radius: 99px;
   background: #ef4444; color: #fff;
-  font-size: 11px; font-weight: 700;
+  font-size: 11px; font-weight: 700; line-height: 1;
   display: flex; align-items: center; justify-content: center;
+  font-variant-numeric: tabular-nums;
   box-shadow: 0 2px 7px rgba(239,68,68,0.5);
 }
 

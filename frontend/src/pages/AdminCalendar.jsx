@@ -3,7 +3,7 @@ import {
   CalendarDays, Clock, Check, ChevronLeft, ChevronRight, CalendarClock,
 } from 'lucide-react'
 import { useAuth } from '../AuthContext'
-import { getAvailability, saveAvailability, getAdminBookings, buildTimes } from '../calendarStore'
+import { getAvailability, saveAvailability, getAdminBookings, BLOCK_STARTS, blockLabel, GRID } from '../calendarStore'
 
 const WD_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -16,7 +16,7 @@ const DAY_CIRCLES = [
   { i: 6, l: 'Sa', weekend: true },
 ]
 
-const TIME_OPTIONS = buildTimes(8, 17)   // 8:00 AM – 5:00 PM, 30-min
+const TIME_OPTIONS = BLOCK_STARTS   // 30-min block starts, 8:00 AM – 4:30 PM
 
 const startOfDay = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
 const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -91,17 +91,18 @@ export default function AdminCalendar() {
     if (!error) { setSaved(true); setTimeout(() => setSaved(false), 2500) }
   }
 
-  const selBookings = byDate[iso(selDate)] || []
+  // Sort the day's bookings chronologically by start time (earliest AM → latest PM).
+  const startIdx = b => GRID.indexOf(String(b.slot).split('–')[0].trim())
+  const selBookings = [...(byDate[iso(selDate)] || [])].sort((a, b) => startIdx(a) - startIdx(b))
   // Expand each booking's "1:00 PM – 3:00 PM" range into the 30-min slots it
   // occupies, so those hours show as booked (not available) for this date.
   const bookedSel = {}
   for (const b of selBookings) {
     const parts = String(b.slot).split('–').map(s => s.trim())
-    const a = TIME_OPTIONS.indexOf(parts[0])
+    const a = GRID.indexOf(parts[0])
     if (a < 0) continue
-    let z = parts[1] ? TIME_OPTIONS.indexOf(parts[1]) : a + 1
-    if (z < 0) z = TIME_OPTIONS.length
-    for (let i = a; i < z; i++) bookedSel[TIME_OPTIONS[i]] = b.employeeName
+    const z = parts[1] ? GRID.indexOf(parts[1]) : a + 1
+    for (let gi = a; gi < z; gi++) bookedSel[GRID[gi]] = b.employeeName
   }
   const selAvailable = weekdays.includes(selDate.getDay())
   const fmtSel = selDate.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
@@ -246,7 +247,7 @@ export default function AdminCalendar() {
                     onClick={() => { if (!bookedBy) toggleSlot(t) }}
                     title={bookedBy ? `Reserved by ${bookedBy} on ${selShort}` : ''}
                   >
-                    <span className="av-time-label"><Clock size={12} /> {t}</span>
+                    <span className="av-time-label"><Clock size={12} /> <span className="av-time-txt">{blockLabel(t)}</span></span>
                     {bookedBy
                       ? <span className="av-time-booked">Booked</span>
                       : <span className={`av-switch${on ? ' on' : ''}`}><span className="av-switch-knob" /></span>}

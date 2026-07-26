@@ -352,6 +352,11 @@
   border-color: var(--g700); background: var(--g700); color: #fff;
 }
 .bk-slot.selected svg { color: rgba(255,255,255,0.85); }
+.bk-slot.inrange {
+  border-color: var(--g600); background: var(--g100); color: var(--g700);
+}
+.bk-slot.inrange svg { color: var(--g600); }
+.bk-slot.inrange:hover { background: var(--g200, var(--g100)); }
 .bk-slot.taken {
   cursor: not-allowed; background: var(--surface-2); color: var(--t4);
   border-color: var(--bdr2); border-style: dashed;

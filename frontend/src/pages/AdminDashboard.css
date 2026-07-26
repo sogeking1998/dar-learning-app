@@ -38,10 +38,12 @@
 .admin-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .admin-nav-badge {
   margin-left: auto; flex-shrink: 0;
+  box-sizing: border-box;
   min-width: 20px; height: 20px; padding: 0 6px;
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 99px; background: #ea580c; color: #fff;
-  font-size: 0.68rem; font-weight: 800; line-height: 1;
+  font-size: 11px; font-weight: 800; line-height: 20px;
+  font-variant-numeric: tabular-nums;
 }
 
 .admin-nav-item {
@@ -507,7 +509,7 @@
 .cal-reset-day:hover { color: #1c9e4d; }
 
 /* Hours — compact switch rows flowing into multiple columns */
-.av-times { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 7px; }
+.av-times { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 7px; }
 .av-time-row {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 6px 8px 6px 11px; border-radius: 10px; cursor: pointer; font-family: inherit;
@@ -515,8 +517,9 @@
 }
 .av-time-row:hover { background: #f7f8fa; border-color: #e5e7eb; }
 .av-time-row.on { background: #f0fdf4; border-color: #d4f0de; }
-.av-time-label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; color: #4b5563; white-space: nowrap; }
+.av-time-label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; color: #4b5563; white-space: nowrap; min-width: 0; overflow: hidden; }
 .av-time-label svg { color: #c2c8d0; flex-shrink: 0; }
+.av-time-txt { overflow: hidden; text-overflow: ellipsis; }
 .av-time-row.on .av-time-label { color: #15803d; }
 .av-time-row.on .av-time-label svg { color: #15803d; }
 .av-switch {
@@ -703,6 +706,10 @@
   .cal-booking { flex-direction: column; align-items: flex-start; gap: 7px; }
   .cal-legend { gap: 8px 14px; }
   .av-day-circle { width: 40px; height: 40px; font-size: 0.78rem; }
+}
+/* Very narrow screens: one time-block per row so labels never clip. */
+@media (max-width: 400px) {
+  .av-times { grid-template-columns: 1fr; }
 }
 
 /* Material file card (admin) */

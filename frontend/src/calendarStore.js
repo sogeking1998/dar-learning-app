@@ -16,7 +16,21 @@ export function buildTimes(startH, endH) {
 }
 
 export const DEFAULT_WEEKDAYS = [1, 2, 3, 4, 5]             // weekdays only (no weekends)
-export const DEFAULT_SLOTS = buildTimes(8, 17)              // 8:00 AM – 5:00 PM, 30-min
+
+// Availability is a set of 30-min BLOCK start times. Each start t denotes the
+// bookable block [t, endOf(t)]. GRID is the full boundary grid (includes the
+// final 5:00 PM end); BLOCK_STARTS drops that trailing end so it lists only the
+// times a block can start at (8:00 AM … 4:30 PM).
+export const GRID = buildTimes(8, 17)                      // 8:00 AM … 5:00 PM
+export const BLOCK_STARTS = GRID.slice(0, -1)              // 8:00 AM … 4:30 PM
+export const endOf = t => GRID[GRID.indexOf(t) + 1]        // a block's end time
+export const blockLabel = t => `${t} – ${endOf(t)}`        // e.g. "8:00 AM – 8:30 AM"
+
+export const DEFAULT_SLOTS = [...BLOCK_STARTS]             // default: every block open
+
+// Keep only valid block starts — normalizes legacy data that stored boundary
+// times (e.g. a trailing "5:00 PM") rather than block starts.
+const normSlots = arr => (arr || []).filter(t => BLOCK_STARTS.includes(t))
 
 // An admin's availability. `slots` is the default weekly template; `dateSlots`
 // holds per-date overrides ({ 'YYYY-MM-DD': [...slots] }) — a date listed there
@@ -29,10 +43,13 @@ export async function getAvailability(userId) {
     .eq('user_id', userId)
     .maybeSingle()
   if (error) { console.error('Load availability failed:', error.message) }
+  const dateSlots = Object.fromEntries(
+    Object.entries(data?.date_slots || {}).map(([k, v]) => [k, normSlots(v)])
+  )
   return {
     weekdays: data?.weekdays?.length ? data.weekdays : DEFAULT_WEEKDAYS,
-    slots: data?.slots?.length ? data.slots : DEFAULT_SLOTS,
-    dateSlots: data?.date_slots || {},
+    slots: data?.slots?.length ? normSlots(data.slots) : DEFAULT_SLOTS,
+    dateSlots,
   }
 }
 
