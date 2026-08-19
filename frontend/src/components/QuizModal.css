@@ -69,14 +69,6 @@
 }
 
 .quiz-choices { display: flex; flex-direction: column; gap: 8px; padding-left: 31px; }
-.quiz-multi-hint {
-  margin: 10px 0 0 31px;
-  font-size: 0.82rem; font-weight: 700;
-  padding: 8px 12px; border-radius: 8px;
-  background: #fef3c7; color: #92400e;
-  display: inline-block;
-}
-.quiz-multi-hint.ok { background: #dcfce7; color: #15803d; }
 .quiz-choice {
   display: flex; align-items: center; gap: 11px;
   width: 100%; text-align: left;

@@ -108,10 +108,8 @@ create table if not exists public.exam_questions (
   question   text not null,
   choices    jsonb not null default '[]',
   answer     int  not null default 0,
-  answers    jsonb,                       -- multi-select correct indices, e.g. [0,2]; null = single-answer question
   created_at timestamptz not null default now()
 );
-alter table public.exam_questions add column if not exists answers jsonb;
 alter table public.exam_questions enable row level security;
 create policy "questions readable by signed-in users"
   on public.exam_questions for select to authenticated using (true);
