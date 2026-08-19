@@ -207,6 +207,16 @@
 .ax-btn-save { background: #157347; color: #fff; box-shadow: 0 4px 12px rgba(21, 115, 71, 0.28); }
 .ax-btn-save:hover { background: #0f5132; }
 
+/* Bulk add: multiple question cards saved together */
+.ax-batch { margin-bottom: 18px; }
+.ax-batch-card { margin-bottom: 14px; }
+.ax-batch-card-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f0f2f5; }
+.ax-batch-num { font-size: 0.9rem; font-weight: 800; color: #157347; letter-spacing: 0.01em; }
+.ax-batch-remove { display: inline-flex; align-items: center; gap: 5px; background: none; border: none; color: #b42318; font-size: 0.8rem; font-weight: 700; font-family: inherit; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+.ax-batch-remove:hover { background: #fef3f2; }
+.ax-add-another { margin: 2px 0 18px; padding: 12px; width: 100%; justify-content: center; border: 1.5px dashed #cbd5d0; border-radius: 12px; color: #157347; background: #f8fbf9; }
+.ax-add-another:hover { background: #f0f7f3; border-color: #157347; }
+
 /* Question cards */
 .ax-questions { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; }
 .ax-question {

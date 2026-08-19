@@ -26,6 +26,16 @@ export async function addQuestion(courseId, type, { text, choices, answer, answe
   return { error }
 }
 
+// Insert several questions in a single request (bulk add).
+export async function addQuestions(courseId, type, items) {
+  const rows = items.map(({ text, choices, answer, answers }) => ({
+    course_id: courseId, type, question: text, choices, answer, answers: answers ?? null,
+  }))
+  const { error } = await supabase.from('exam_questions').insert(rows)
+  if (error) console.error('Add questions failed:', error.message)
+  return { error }
+}
+
 export async function updateQuestion(id, { text, choices, answer, answers }) {
   const { error } = await supabase
     .from('exam_questions')
