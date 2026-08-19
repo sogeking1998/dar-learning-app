@@ -7,26 +7,29 @@ import { supabase } from './supabaseClient'
 export async function getQuestions(courseId, type) {
   const { data, error } = await supabase
     .from('exam_questions')
-    .select('id, question, choices, answer')
+    .select('id, question, choices, answer, answers')
     .eq('course_id', courseId)
     .eq('type', type)
     .order('created_at', { ascending: true })
   if (error) { console.error('Load questions failed:', error.message); return [] }
-  return (data || []).map(q => ({ id: q.id, text: q.question, choices: q.choices || [], answer: q.answer }))
+  return (data || []).map(q => ({
+    id: q.id, text: q.question, choices: q.choices || [], answer: q.answer,
+    answers: Array.isArray(q.answers) && q.answers.length >= 2 ? q.answers : null,
+  }))
 }
 
-export async function addQuestion(courseId, type, { text, choices, answer }) {
+export async function addQuestion(courseId, type, { text, choices, answer, answers }) {
   const { error } = await supabase
     .from('exam_questions')
-    .insert({ course_id: courseId, type, question: text, choices, answer })
+    .insert({ course_id: courseId, type, question: text, choices, answer, answers: answers ?? null })
   if (error) console.error('Add question failed:', error.message)
   return { error }
 }
 
-export async function updateQuestion(id, { text, choices, answer }) {
+export async function updateQuestion(id, { text, choices, answer, answers }) {
   const { error } = await supabase
     .from('exam_questions')
-    .update({ question: text, choices, answer })
+    .update({ question: text, choices, answer, answers: answers ?? null })
     .eq('id', id)
   if (error) console.error('Update question failed:', error.message)
   return { error }
@@ -40,7 +43,7 @@ export async function deleteQuestion(id) {
 
 // Blank question for the editor form (no id until saved).
 export function makeQuestion() {
-  return { text: '', choices: ['', '', '', ''], answer: 0 }
+  return { text: '', choices: ['', '', '', ''], answer: 0, multi: false, answers: [], requiredCount: 2 }
 }
 
 // How many questions each session/type actually has → { `${course_id}-${type}`: count }.

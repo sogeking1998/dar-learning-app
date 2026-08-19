@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, CheckCircle2, XCircle, Award, RotateCcw, Clock, AlertTriangle, ArrowRight, Lock } from 'lucide-react'
+import { X, CheckCircle2, XCircle, Award, RotateCcw, Clock, AlertTriangle, ArrowRight, Lock, CheckSquare, Square } from 'lucide-react'
 import { getQuestions, saveResult } from '../examStore'
 import { PASS_PCT } from '../completion'
 import './QuizModal.css'
@@ -7,6 +7,25 @@ import './QuizModal.css'
 const QUESTION_SECONDS = 60
 
 const fmtClock = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
+// A question with 2+ correct answers requires the student to pick that many choices.
+const isMulti = q => Array.isArray(q.answers) && q.answers.length >= 2
+
+// Has the student made a selection at all (used for "answered" counts, not completeness).
+const hasAnswer = (q, ans) => (isMulti(q) ? Array.isArray(ans) && ans.length > 0 : ans != null)
+
+// Has the student selected exactly the required number of answers.
+const isComplete = (q, ans) => (isMulti(q) ? Array.isArray(ans) && ans.length === q.answers.length : ans != null)
+
+const isCorrectAnswer = (q, ans) => {
+  if (isMulti(q)) {
+    if (!Array.isArray(ans) || ans.length !== q.answers.length) return false
+    const want = [...q.answers].sort((a, b) => a - b).join(',')
+    const got = [...ans].sort((a, b) => a - b).join(',')
+    return want === got
+  }
+  return ans === q.answer
+}
 
 // Fisher–Yates — returns a new, randomly ordered copy.
 function shuffled(arr) {
@@ -18,8 +37,8 @@ function shuffled(arr) {
   return a
 }
 
-// Randomize question order and each question's choices, keeping `answer`
-// pointed at the correct choice's new index so scoring stays correct.
+// Randomize question order and each question's choices, keeping `answer`/`answers`
+// pointed at the correct choices' new indices so scoring stays correct.
 function shuffleQuiz(questions) {
   return shuffled(questions).map(q => {
     const order = shuffled(q.choices.map((_, i) => i)) // permutation of choice indices
@@ -27,6 +46,7 @@ function shuffleQuiz(questions) {
       ...q,
       choices: order.map(i => q.choices[i]),
       answer: order.indexOf(q.answer),
+      answers: isMulti(q) ? q.answers.map(a => order.indexOf(a)) : q.answers,
     }
   })
 }
@@ -37,10 +57,10 @@ function reconstruct(questions, targetScore) {
   const total = questions.length
   const wrongCount = Math.max(0, total - Math.min(targetScore, total))
   const a = {}
-  questions.forEach(q => { a[q.id] = q.answer })
+  questions.forEach(q => { a[q.id] = isMulti(q) ? [...q.answers] : q.answer })
   for (let i = total - 1; i >= 0 && (total - 1 - i) < wrongCount; i--) {
     const q = questions[i]
-    a[q.id] = (q.answer + 1) % q.choices.length
+    a[q.id] = isMulti(q) ? q.answers.slice(1) : (q.answer + 1) % q.choices.length
   }
   return a
 }
@@ -78,14 +98,23 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
   const label = type === 'pre' ? 'Pre-Test' : 'Post-Test'
   const graded = type !== 'pre'   // pre-tests are taken for readiness, not scored
   const total = questions.length
-  const answered = questions.filter(q => answers[q.id] != null).length
-  const score = questions.filter(q => answers[q.id] === q.answer).length
+  const answered = questions.filter(q => hasAnswer(q, answers[q.id])).length
+  const score = questions.filter(q => isCorrectAnswer(q, answers[q.id])).length
   const pct = total ? Math.round((score / total) * 100) : 0
   const passed = pct >= PASS_PCT
 
   const choose = (qid, i) => {
     if (submitted) return
-    setAnswers(a => ({ ...a, [qid]: i }))
+    const qq = questions.find(x => x.id === qid)
+    if (qq && isMulti(qq)) {
+      setAnswers(a => {
+        const cur = Array.isArray(a[qid]) ? a[qid] : []
+        const next = cur.includes(i) ? cur.filter(x => x !== i) : [...cur, i]
+        return { ...a, [qid]: next }
+      })
+    } else {
+      setAnswers(a => ({ ...a, [qid]: i }))
+    }
   }
 
   const submit = async () => {
@@ -136,16 +165,30 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
 
   const inProgress = started && !submitted          // timed flow is live
   const q = questions[current]
-  const answeredCurrent = q && answers[q.id] != null
+  const answeredCurrent = q && isComplete(q, answers[q.id])
   const isLast = current === total - 1
+
+  // For a live multi-select question: tells the student how many more/fewer to pick.
+  const multiHint = qq => {
+    if (!qq || !isMulti(qq)) return null
+    const need = qq.answers.length
+    const need2 = qq.choices.length
+    const sel = Array.isArray(answers[qq.id]) ? answers[qq.id].length : 0
+    if (sel === need) return { ok: true, text: `${need} of ${need} selected — ready to continue` }
+    if (sel < need) return { ok: false, text: `Choose ${need}/${need2} answers — select ${need - sel} more` }
+    return { ok: false, text: `Choose exactly ${need}/${need2} answers — remove ${sel - need}` }
+  }
 
   // A choice button for the active or review views.
   const renderChoice = (qq, c, i) => {
-    const chosen = answers[qq.id] === i
+    const multi = isMulti(qq)
+    const ansVal = answers[qq.id]
+    const chosen = multi ? Array.isArray(ansVal) && ansVal.includes(i) : ansVal === i
+    const isCorrectChoice = multi ? qq.answers.includes(i) : i === qq.answer
     let cls = 'quiz-choice'
     let tag = null
     if (submitted && graded) {
-      if (i === qq.answer) {
+      if (isCorrectChoice) {
         // The right option: solid green only if the user actually picked it,
         // otherwise show it as the answer key without implying they got it.
         if (chosen) {
@@ -165,7 +208,9 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
     }
     return (
       <button key={i} className={cls} onClick={() => choose(qq.id, i)} disabled={submitted}>
-        <span className="quiz-choice-mark">{String.fromCharCode(65 + i)}</span>
+        <span className="quiz-choice-mark">
+          {multi ? (chosen ? <CheckSquare size={16} /> : <Square size={16} />) : String.fromCharCode(65 + i)}
+        </span>
         <span className="quiz-choice-text">{c}</span>
         {tag}
       </button>
@@ -242,6 +287,9 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
               <div className="quiz-choices">
                 {q.choices.map((c, i) => renderChoice(q, c, i))}
               </div>
+              {isMulti(q) && (
+                <p className={`quiz-multi-hint${multiHint(q).ok ? ' ok' : ''}`}>{multiHint(q).text}</p>
+              )}
             </div>
           </div>
 
@@ -253,7 +301,7 @@ export default function QuizModal({ course, type, userId, priorResult, onClose, 
                 <p className="quiz-q-text">
                   <span className="quiz-q-num">{idx + 1}</span>
                   <span className="quiz-q-body">{qq.text}</span>
-                  {answers[qq.id] == null && <span className="quiz-skip">Not answered</span>}
+                  {!hasAnswer(qq, answers[qq.id]) && <span className="quiz-skip">Not answered</span>}
                 </p>
                 <div className="quiz-choices">
                   {qq.choices.map((c, i) => renderChoice(qq, c, i))}

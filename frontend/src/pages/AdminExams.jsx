@@ -42,7 +42,28 @@ export default function AdminExams({ courseId: propCourseId }) {
   const course = allCourses.find(c => c.id === courseId)
 
   const startAdd = () => setEditor(makeQuestion())
-  const startEdit = q => setEditor({ id: q.id, text: q.text, choices: [...q.choices], answer: q.answer })
+  const startEdit = q => {
+    const multi = Array.isArray(q.answers) && q.answers.length >= 2
+    setEditor({
+      id: q.id, text: q.text, choices: [...q.choices],
+      answer: q.answer, multi,
+      answers: multi ? [...q.answers] : [],
+      requiredCount: multi ? q.answers.length : 2,
+    })
+  }
+
+  const toggleMulti = () => setEditor(e => {
+    const multi = !e.multi
+    return multi
+      ? { ...e, multi, answers: e.answers.length ? e.answers : [e.answer], requiredCount: Math.max(2, e.requiredCount || 2) }
+      : { ...e, multi, answer: e.answers[0] ?? 0 }
+  })
+
+  const toggleAnswer = i => setEditor(e => {
+    const has = e.answers.includes(i)
+    const answers = has ? e.answers.filter(a => a !== i) : [...e.answers, i]
+    return { ...e, answers }
+  })
 
   const saveEditor = async () => {
     const text = editor.text.trim()
@@ -51,10 +72,22 @@ export default function AdminExams({ courseId: propCourseId }) {
 
     if (!text) return alert('Please enter the question text.')
     if (kept.length < 2) return alert('Please provide at least two choices.')
-    if (!cleaned[editor.answer]) return alert('Please mark a non-empty choice as the correct answer.')
 
-    const newAnswer = kept.indexOf(cleaned[editor.answer])
-    const payload = { text, choices: kept, answer: newAnswer }
+    let payload
+    if (editor.multi) {
+      const count = Number(editor.requiredCount) || 0
+      if (count < 2) return alert('Multiple-answer questions need at least 2 correct answers.')
+      if (count > kept.length) return alert(`The required number of answers (${count}) can't exceed the number of choices.`)
+      const newAnswers = [...new Set(
+        editor.answers.map(i => cleaned[i]).filter(Boolean).map(v => kept.indexOf(v))
+      )]
+      if (newAnswers.length !== count) return alert(`Please mark exactly ${count} non-empty choices as correct answers.`)
+      payload = { text, choices: kept, answer: newAnswers[0], answers: newAnswers }
+    } else {
+      if (!cleaned[editor.answer]) return alert('Please mark a non-empty choice as the correct answer.')
+      const newAnswer = kept.indexOf(cleaned[editor.answer])
+      payload = { text, choices: kept, answer: newAnswer, answers: null }
+    }
 
     setSaving(true)
     const { error } = editor.id
@@ -85,7 +118,10 @@ export default function AdminExams({ courseId: propCourseId }) {
       let answer = e.answer
       if (i === e.answer) answer = 0
       else if (i < e.answer) answer = e.answer - 1
-      return { ...e, choices, answer }
+      const answers = e.answers
+        .filter(a => a !== i)
+        .map(a => (a > i ? a - 1 : a))
+      return { ...e, choices, answer, answers }
     })
 
   return (
@@ -148,16 +184,46 @@ export default function AdminExams({ courseId: propCourseId }) {
             placeholder="Type the question here…"
           />
 
-          <label className="ax-label">Choices <span className="ax-hint">(select the radio for the correct answer)</span></label>
+          <label className="ax-multi-toggle">
+            <input type="checkbox" checked={editor.multi} onChange={toggleMulti} />
+            Allow multiple correct answers
+          </label>
+
+          {editor.multi && (
+            <label className="ax-label">
+              How many answers should students select?
+              <input
+                type="number"
+                className="ax-count-input"
+                min={2}
+                max={editor.choices.length}
+                value={editor.requiredCount}
+                onChange={e => setEditor({ ...editor, requiredCount: Number(e.target.value) })}
+              />
+            </label>
+          )}
+
+          <label className="ax-label">
+            Choices <span className="ax-hint">{editor.multi ? '(check every correct answer)' : '(select the radio for the correct answer)'}</span>
+          </label>
           {editor.choices.map((c, i) => (
             <div key={i} className="ax-choice-row">
-              <input
-                type="radio"
-                name="ax-correct"
-                checked={editor.answer === i}
-                onChange={() => setEditor({ ...editor, answer: i })}
-                title="Mark as correct answer"
-              />
+              {editor.multi ? (
+                <input
+                  type="checkbox"
+                  checked={editor.answers.includes(i)}
+                  onChange={() => toggleAnswer(i)}
+                  title="Mark as a correct answer"
+                />
+              ) : (
+                <input
+                  type="radio"
+                  name="ax-correct"
+                  checked={editor.answer === i}
+                  onChange={() => setEditor({ ...editor, answer: i })}
+                  title="Mark as correct answer"
+                />
+              )}
               <input
                 className="ax-choice-input"
                 value={c}
@@ -189,27 +255,36 @@ export default function AdminExams({ courseId: propCourseId }) {
         <div className="ax-empty"><HelpCircle size={32} /><p>No questions yet. Click "Add Question" to create one.</p></div>
       ) : (
         <ol className="ax-questions">
-          {questions.map((q, idx) => (
-            <li key={q.id} className="ax-question">
-              <div className="ax-q-top">
-                <span className="ax-q-num">{idx + 1}</span>
-                <p className="ax-q-text">{q.text}</p>
-                <div className="ax-q-actions">
-                  <button onClick={() => startEdit(q)} title="Edit"><Pencil size={14} /></button>
-                  <button onClick={() => setConfirmDel(q.id)} title="Delete" className="ax-q-del"><Trash2 size={14} /></button>
+          {questions.map((q, idx) => {
+            const isMulti = Array.isArray(q.answers) && q.answers.length >= 2
+            return (
+              <li key={q.id} className="ax-question">
+                <div className="ax-q-top">
+                  <span className="ax-q-num">{idx + 1}</span>
+                  <p className="ax-q-text">
+                    {q.text}
+                    {isMulti && <span className="ax-multi-badge">Choose {q.answers.length}</span>}
+                  </p>
+                  <div className="ax-q-actions">
+                    <button onClick={() => startEdit(q)} title="Edit"><Pencil size={14} /></button>
+                    <button onClick={() => setConfirmDel(q.id)} title="Delete" className="ax-q-del"><Trash2 size={14} /></button>
+                  </div>
                 </div>
-              </div>
-              <ul className="ax-q-choices">
-                {q.choices.map((c, i) => (
-                  <li key={i} className={i === q.answer ? 'ax-correct' : ''}>
-                    <span className="ax-choice-letter">{String.fromCharCode(65 + i)}</span>
-                    {c}
-                    {i === q.answer && <Check size={14} />}
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
+                <ul className="ax-q-choices">
+                  {q.choices.map((c, i) => {
+                    const correct = isMulti ? q.answers.includes(i) : i === q.answer
+                    return (
+                      <li key={i} className={correct ? 'ax-correct' : ''}>
+                        <span className="ax-choice-letter">{String.fromCharCode(65 + i)}</span>
+                        {c}
+                        {correct && <Check size={14} />}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </li>
+            )
+          })}
         </ol>
       )}
 

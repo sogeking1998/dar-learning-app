@@ -33,17 +33,11 @@ export default function App() {
 
   // Wait for Supabase to restore any existing session before deciding.
   if (loading) return <Loading />
-
-  // First-login accounts must change the default password before anything else.
   if (session && mustResetPassword) return <ForcePasswordReset />
-
-  // Role-based consoles take priority over the employee app.
   if (session && isSuperAdmin) return <SuperAdminDashboard />
   if (session && isAdmin) return <AdminDashboard />
   if (session && isCopilot) return <CopilotDashboard />
   if (session && adminStatus === 'pending') return <PendingApproval />
-
-  // Not signed in → only the login / signup pages are reachable.
   if (!session) {
     return (
       <Routes>
