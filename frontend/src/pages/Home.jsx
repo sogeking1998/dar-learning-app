@@ -14,18 +14,24 @@ const ABOUT_POINTS = [
   { icon: Building2, title: 'Administrative (Admin)',              text: 'DAR administrative procedures, documentation, and office protocols for new staff.' },
 ]
 
+// Shipped with the app as a reliable default; an admin-uploaded video from
+// Supabase still takes priority whenever one is available.
+const DEFAULT_WELCOME_VIDEO = `${import.meta.env.BASE_URL}videos/welcome.mp4`
+
 const fmtDate = d =>
   new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
 
 export default function Home() {
   const [anns, setAnns] = useState([])
-  const [welcome, setWelcome] = useState(null)
+  const [welcome, setWelcome] = useState(() => ({ url: DEFAULT_WELCOME_VIDEO }))
   const [started, setStarted] = useState(false)
   const videoRef = useRef(null)
 
   useEffect(() => {
     getAnnouncements().then(setAnns)
-    getWelcomeVideo().then(setWelcome)
+    getWelcomeVideo().then(video => {
+      if (video?.url) setWelcome(video)
+    })
   }, [])
 
   const startPlay = () => {
