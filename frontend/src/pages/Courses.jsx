@@ -1,20 +1,24 @@
 import { useState } from 'react'
 import {
-  Users, Map, Scale, Building2, ArrowUpRight, ExternalLink,
+  Users, Map, Scale, Building2, ExternalLink,
   BookOpen, X, Loader2,
 } from 'lucide-react'
 import { useCourses } from '../courseStore'
 import { useUser } from '../UserContext'
 import { sessionCompletion, useUserProgress } from '../completion'
+import pbdImg from '../assets/courses/pbd.png'
+import ltsImg from '../assets/courses/lts.jpeg'
+import ajdImg from '../assets/courses/ajd.png'
+import adminImg from '../assets/courses/admin.jpeg'
 import './Courses.css'
 
 // The four divisions, in display order, with the presentation details
-// (full name, blurb, gradient class, icon) the boxes render.
+// (full name, blurb, gradient class, icon, header photo) the boxes render.
 const DIVISIONS = [
-  { code: 'PBD',   name: 'Program Beneficiaries Development', blurb: 'Support services, research, and enterprise development for agrarian reform beneficiaries.', cls: 'pbd',   Icon: Users },
-  { code: 'LTS',   name: 'Land Tenure Services',             blurb: 'Land acquisition, distribution, and the processing of EP/CLOA documents.',              cls: 'lts',   Icon: Map },
-  { code: 'AJD',   name: 'Agrarian Justice Delivery',        blurb: 'Adjudication and mediation of agrarian disputes and cases.',                            cls: 'ajd',   Icon: Scale },
-  { code: 'Admin', name: 'Administrative Services',          blurb: 'Administrative procedures, documentation, and internal protocols.',                    cls: 'admin', Icon: Building2 },
+  { code: 'PBD',   name: 'Program Beneficiaries Development', blurb: 'Support services, research, and enterprise development for agrarian reform beneficiaries.', cls: 'pbd',   Icon: Users,     img: pbdImg },
+  { code: 'LTS',   name: 'Land Tenure Services',             blurb: 'Land acquisition, distribution, and the processing of EP/CLOA documents.',              cls: 'lts',   Icon: Map,       img: ltsImg },
+  { code: 'AJD',   name: 'Agrarian Justice Delivery',        blurb: 'Adjudication and mediation of agrarian disputes and cases.',                            cls: 'ajd',   Icon: Scale,     img: ajdImg },
+  { code: 'Admin', name: 'Administrative Services',          blurb: 'Administrative procedures, documentation, and internal protocols.',                    cls: 'admin', Icon: Building2, img: adminImg },
 ]
 
 const STATUS = {
@@ -50,36 +54,48 @@ export default function Courses() {
   return (
     <div className="courses-page">
       <div className="page-header">
+        <span className="cv-eyebrow">Learning Hub</span>
         <h1 className="page-title">Courses</h1>
         <p className="page-sub">Choose your division to view its training sessions</p>
       </div>
 
       <div className="cv-grid">
-        {DIVISIONS.map(({ code, name, blurb, cls, Icon }) => {
+        {DIVISIONS.map(({ code, name, blurb, cls, Icon, img }) => {
           const s = statsFor(code)
           return (
-            <button key={code} className={`cv-card ${cls}`} onClick={() => setOpenDiv(code)}>
-              {/* Floating gradient panel with the division title inside */}
-              <div className="cv-panel">
-                <span className="cv-glow" aria-hidden="true" />
-                <div className="cv-panel-row">
-                  <h3 className="cv-title">{name}</h3>
-                  <span className="cv-panel-icon"><Icon size={24} /></span>
-                </div>
+            <div
+              key={code}
+              className={`cv-card ${cls}`}
+              onClick={() => setOpenDiv(code)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setOpenDiv(code)}
+            >
+              {/* Header photo, clipped to the card's rounded corners */}
+              <div className="cv-media">
+                <img src={img} alt="" className="cv-media-img" loading="lazy" />
               </div>
+              {/* Icon badge overlaps the photo/body boundary — kept outside
+                  .cv-media so its overflow:hidden doesn't clip the badge */}
+              <span className="cv-media-icon"><Icon size={26} /></span>
 
               {/* Body */}
               <div className="cv-body">
+                <h3 className="cv-title">{name}</h3>
+                <span className="cv-title-rule" aria-hidden="true" />
                 <p className="cv-desc">{blurb}</p>
                 <div className="cv-progress">
                   <div className="cv-track">
                     <div className="cv-fill" style={{ width: `${s.pct}%` }} />
                   </div>
-                  <span className="cv-progress-lbl">{s.pct}% complete · {s.done}/{s.total} sessions</span>
+                  <div className="cv-progress-row">
+                    <span>{s.pct}% complete</span>
+                    <span>{s.done}/{s.total} sessions</span>
+                  </div>
                 </div>
-                <span className="cv-cta">View sessions <ArrowUpRight size={15} /></span>
+                <span className="cv-cta"><ExternalLink size={15} /> Open Course</span>
               </div>
-            </button>
+            </div>
           )
         })}
       </div>
