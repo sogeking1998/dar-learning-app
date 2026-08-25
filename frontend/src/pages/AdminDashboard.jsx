@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import {
   LayoutDashboard, LineChart, LogOut, Megaphone,
   Users, BookOpen, BarChart3, Award, ArrowRight, Sparkles, CheckCircle2, MessageSquare,
@@ -10,12 +10,16 @@ import { CallProvider } from '../CallContext'
 import { MOCK_EMPLOYEES } from '../mockData'
 import DarLogo from '../components/DarLogo'
 import ConfirmModal from '../components/ConfirmModal'
-import AdminCourses from './AdminCourses'
-import AdminAnalytics from './AdminAnalytics'
-import AdminAnnouncements from './AdminAnnouncements'
-import AdminUsers from './AdminUsers'
-import Messages from './Messages'
+import AuthLoading from '../components/AuthLoading'
 import './AdminDashboard.css'
+
+// Lazy: only the tab an admin actually opens gets downloaded, instead of
+// all six console sections loading up front.
+const AdminCourses = lazy(() => import('./AdminCourses'))
+const AdminAnalytics = lazy(() => import('./AdminAnalytics'))
+const AdminAnnouncements = lazy(() => import('./AdminAnnouncements'))
+const AdminUsers = lazy(() => import('./AdminUsers'))
+const Messages = lazy(() => import('./Messages'))
 
 const DIVISIONS = ['PBD', 'LTS', 'AJD', 'Admin']
 
@@ -96,11 +100,13 @@ function AdminConsole() {
 
         <div className="admin-content">
           {view === 'dashboard' && <Overview onNavigate={setView} />}
-          {view === 'analytics' && <AdminAnalytics />}
-          {view === 'courses' && <AdminCourses />}
-          {view === 'users' && <AdminUsers />}
-          {view === 'messages' && <Messages />}
-          {view === 'announcements' && <AdminAnnouncements />}
+          <Suspense fallback={<AuthLoading message="Loading" />}>
+            {view === 'analytics' && <AdminAnalytics />}
+            {view === 'courses' && <AdminCourses />}
+            {view === 'users' && <AdminUsers />}
+            {view === 'messages' && <Messages />}
+            {view === 'announcements' && <AdminAnnouncements />}
+          </Suspense>
         </div>
       </div>
 

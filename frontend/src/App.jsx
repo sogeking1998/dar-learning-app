@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { UserProvider, useUser } from './UserContext'
 import { MessagesProvider } from './MessagesContext'
@@ -18,13 +18,17 @@ import Certificates from './pages/Certificates'
 import Messages from './pages/Messages'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
-import AdminDashboard from './pages/AdminDashboard'
-import CopilotDashboard from './pages/CopilotDashboard'
-import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import PendingApproval from './pages/PendingApproval'
 import AuthLoading from './components/AuthLoading'
 import ForcePasswordReset from './components/ForcePasswordReset'
 import './App.css'
+
+// Lazy: each of these three is mutually exclusive per session (a user is
+// exactly one role), so splitting them keeps a trainee's bundle from ever
+// downloading the admin/superadmin/copilot consoles they'll never render.
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const CopilotDashboard = lazy(() => import('./pages/CopilotDashboard'))
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'))
 
 const Loading = () => <AuthLoading message="Loading" />
 
@@ -34,9 +38,9 @@ export default function App() {
   // Wait for Supabase to restore any existing session before deciding.
   if (loading) return <Loading />
   if (session && mustResetPassword) return <ForcePasswordReset />
-  if (session && isSuperAdmin) return <SuperAdminDashboard />
-  if (session && isAdmin) return <AdminDashboard />
-  if (session && isCopilot) return <CopilotDashboard />
+  if (session && isSuperAdmin) return <Suspense fallback={<Loading />}><SuperAdminDashboard /></Suspense>
+  if (session && isAdmin) return <Suspense fallback={<Loading />}><AdminDashboard /></Suspense>
+  if (session && isCopilot) return <Suspense fallback={<Loading />}><CopilotDashboard /></Suspense>
   if (session && adminStatus === 'pending') return <PendingApproval />
   if (!session) {
     return (
