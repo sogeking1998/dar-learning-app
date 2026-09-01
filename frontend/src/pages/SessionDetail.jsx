@@ -16,6 +16,7 @@ import TaskModal from '../components/TaskModal'
 import VideoModal from '../components/VideoModal'
 import CertificateModal from '../components/CertificateModal'
 import DarLogo from '../components/DarLogo'
+import { certificateIssueDate, examPassed, PASS_PCT } from '../completion'
 import './SessionDetail.css'
 
 // Chrome-free shell for the standalone (new-tab) session view: a slim branded
@@ -47,13 +48,6 @@ const fmtTime = s => {
   const m = Math.floor(s / 60)
   const sec = Math.floor(s % 60)
   return `${m}:${String(sec).padStart(2, '0')}`
-}
-
-// Deterministic issue date derived from course id — matches the Certificates page.
-const issueDateOf = id => {
-  const base = new Date('2024-02-01')
-  base.setDate(base.getDate() + id * 9)
-  return base
 }
 
 export default function SessionDetail() {
@@ -140,8 +134,19 @@ export default function SessionDetail() {
   // Same completion logic as the Browse Courses card.
   const videoDone = !course.hasVideo || videos.length === 0 || videos.every(v => videoProg[v.id]?.completed)
   const taskDone = tasks.length === 0 || tasks.every(t => taskApproved(submissions[t.id]))
-  const items = [videoDone, taskDone, !!preResult, !!postResult]
+  const postPassed = examPassed(postResult)
+  const items = [videoDone, taskDone, !!preResult, postPassed]
   const pct = Math.round((items.filter(Boolean).length / items.length) * 100)
+  const issuedAt = certificateIssueDate(course, {
+    results,
+    submissions,
+    videoProg,
+    tasks: { [course.id]: tasks },
+    sessionVideos: { [course.id]: videos },
+  })
+  const titleParts = course.title.split(/\s+[\u2013\u2014-]\s+/)
+  const titleLead = titleParts.shift()
+  const titleAccent = titleParts.join(' — ')
 
   return (
     <Shell>
@@ -151,7 +156,10 @@ export default function SessionDetail() {
         <div className="sd-hero-top">
           <span className="sd-session-pill">Session {course.session}</span>
         </div>
-        <h1 className="sd-title">{course.title}</h1>
+        <h1 className="sd-title">
+          <span>{titleLead}</span>
+          {titleAccent && <strong> — {titleAccent}</strong>}
+        </h1>
         {course.description && <p className="sd-desc">{course.description}</p>}
 
         <div className="sd-progress">
@@ -180,13 +188,25 @@ export default function SessionDetail() {
         </div>
         <div className="sd-stat">
           <FileText size={20} className="sd-stat-ic icon-pretest" />
-          <div><p className="sd-stat-num">{preResult ? 'Done' : '—'}</p><p className="sd-stat-lbl">Pre-Test</p></div>
+          <div><p className="sd-stat-num">{preResult ? `${preResult.pct}%` : '—'}</p><p className="sd-stat-lbl">Pre-Test score</p></div>
         </div>
         <div className="sd-stat">
           <FileText size={20} className="sd-stat-ic icon-posttest" />
-          <div><p className="sd-stat-num">{postResult ? `${postResult.pct}%` : '—'}</p><p className="sd-stat-lbl">Post-Test</p></div>
+          <div><p className="sd-stat-num">{postResult ? `${postResult.pct}%` : '—'}</p><p className="sd-stat-lbl">{postResult && !postPassed ? 'Retake required' : 'Post-Test'}</p></div>
         </div>
       </div>
+
+      <div className="sd-learning-plan">
+        <div className="sd-plan-head">
+          <div className="sd-plan-heading">
+            <span className="sd-plan-icon"><BookOpen size={20} /></span>
+            <div>
+              <span className="sd-plan-kicker">Session workspace</span>
+              <h2>Learning requirements</h2>
+            </div>
+          </div>
+          <span className="sd-plan-context">{course.division} · {course.code}</span>
+        </div>
 
       {/* Video lectures */}
       <section className="sd-section">
@@ -273,14 +293,14 @@ export default function SessionDetail() {
             <div className="sd-test-info">
               <p className="sd-item-title">Pre-Test</p>
               {preResult
-                ? <p className="sd-item-sub"><b>Completed</b></p>
+                ? <p className="sd-item-sub">Score: {preResult.score}/{preResult.total} · <b>{preResult.pct}%</b> · Completed</p>
                 : <p className="sd-item-sub">Tap to start</p>}
             </div>
             {preResult && <CheckCircle2 size={15} className="sd-test-check" />}
           </button>
 
           <button
-            className={`sd-test ${postResult ? 'done' : ''}${!preResult ? ' locked' : ''}`}
+            className={`sd-test ${postPassed ? 'done' : ''}${postResult && !postPassed ? ' failed' : ''}${!preResult ? ' locked' : ''}`}
             disabled={!preResult}
             onClick={() => preResult && setQuiz({ type: 'post', priorResult: postResult })}
           >
@@ -288,10 +308,10 @@ export default function SessionDetail() {
             <div className="sd-test-info">
               <p className="sd-item-title">Post-Test</p>
               {postResult
-                ? <p className="sd-item-sub">Score: {postResult.score}/{postResult.total} · <b>{postResult.pct}%</b></p>
+                ? <p className="sd-item-sub">Score: {postResult.score}/{postResult.total} · <b>{postResult.pct}%</b>{!postPassed && ` · Retake required (${PASS_PCT}% needed)`}</p>
                 : <p className="sd-item-sub">{preResult ? 'Tap to start' : 'Take the Pre-Test first'}</p>}
             </div>
-            {postResult && <CheckCircle2 size={15} className="sd-test-check" />}
+            {postPassed && <CheckCircle2 size={15} className="sd-test-check" />}
           </button>
         </div>
       </section>
@@ -350,6 +370,7 @@ export default function SessionDetail() {
           </div>
         )}
       </section>
+      </div>
 
       {/* Modals */}
       {quiz && (
@@ -386,7 +407,7 @@ export default function SessionDetail() {
         <CertificateModal
           name={user.name}
           course={course}
-          date={issueDateOf(course.id)}
+          date={issuedAt}
           onClose={() => setShowCert(false)}
         />
       )}

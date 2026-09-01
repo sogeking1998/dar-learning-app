@@ -129,6 +129,9 @@ create table if not exists public.task_submissions (
   file_name    text,
   file_path    text,
   submitted_at timestamptz not null default now(),
+  status       text not null default 'pending',
+  reviewed_at  timestamptz,
+  reviewed_by  uuid references auth.users(id),
   unique (user_id, task_id)
 );
 alter table public.task_submissions enable row level security;
@@ -300,6 +303,9 @@ create policy "taskfiles owner insert" on storage.objects for insert to authenti
   with check (bucket_id='task-files' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "taskfiles owner select" on storage.objects for select to authenticated
   using (bucket_id='task-files' and ((storage.foldername(name))[1] = auth.uid()::text or public.is_staff()));
+create policy "taskfiles owner update" on storage.objects for update to authenticated
+  using (bucket_id='task-files' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id='task-files' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "taskfiles owner delete" on storage.objects for delete to authenticated
   using (bucket_id='task-files' and (storage.foldername(name))[1] = auth.uid()::text);
 

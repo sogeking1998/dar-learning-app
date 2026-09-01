@@ -354,6 +354,9 @@ create policy "taskfiles owner insert" on storage.objects for insert to authenti
   with check (bucket_id='task-files' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "taskfiles owner select" on storage.objects for select to authenticated
   using (bucket_id='task-files' and ((storage.foldername(name))[1] = auth.uid()::text or public.is_staff()));
+create policy "taskfiles owner update" on storage.objects for update to authenticated
+  using (bucket_id='task-files' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id='task-files' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "taskfiles owner delete" on storage.objects for delete to authenticated
   using (bucket_id='task-files' and (storage.foldername(name))[1] = auth.uid()::text);
 

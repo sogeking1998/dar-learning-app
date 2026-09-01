@@ -6,11 +6,15 @@ export async function getVideoProgress(userId) {
   if (!userId) return {}
   const { data, error } = await supabase
     .from('video_completions')
-    .select('video_id, position, completed')
+    .select('video_id, position, completed, completed_at')
     .eq('user_id', userId)
   if (error) { console.error('Load video progress failed:', error.message); return {} }
   const map = {}
-  for (const r of data || []) if (r.video_id != null) map[r.video_id] = { position: r.position || 0, completed: !!r.completed }
+  for (const r of data || []) if (r.video_id != null) map[r.video_id] = {
+    position: r.position || 0,
+    completed: !!r.completed,
+    completed_at: r.completed_at || null,
+  }
   return map
 }
 

@@ -6,8 +6,8 @@ const fmtDate = d =>
   new Date(d).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })
 
 // Deterministic certificate number so the same course always reads the same.
-export const certNumber = course => {
-  const year = new Date().getFullYear()
+export const certNumber = (course, date = new Date()) => {
+  const year = new Date(date).getFullYear()
   return `DAR-CAPDEV-${year}-${course.division.toUpperCase()}${course.session}-${String(course.id).padStart(4, '0')}`
 }
 
@@ -38,8 +38,8 @@ export default function Certificate({ name, course, date }) {
           <p className="cert-text">
             for successfully completing all requirements of the training module
           </p>
-          <p className="cert-course">“{course.title}”</p>
-          <p className="cert-meta">{course.division} Division · Session {course.session} · {course.code}</p>
+          <p className="cert-course">{course.title}</p>
+          <p className="cert-meta">{course.division} Division&nbsp;&nbsp;|&nbsp;&nbsp;Session {course.session}&nbsp;&nbsp;|&nbsp;&nbsp;{course.code}</p>
 
           <div className="cert-footer">
             <div className="cert-sign">
@@ -59,7 +59,7 @@ export default function Certificate({ name, course, date }) {
 
           <div className="cert-issue">
             <span>Issued on {fmtDate(date)}</span>
-            <span>Certificate No. {certNumber(course)}</span>
+            <span>Certificate No. {certNumber(course, date)}</span>
           </div>
         </div>
       </div>

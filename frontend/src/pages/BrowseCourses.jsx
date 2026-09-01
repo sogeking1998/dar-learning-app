@@ -29,7 +29,7 @@ const fmtTime = s => {
 // One Pre/Post test card. Clickable to take the test; shows the recorded score.
 function TestCard({ label, type, course, result, locked, onTake }) {
   const pct = result ? result.pct : 0
-  const passed = pct >= PASS_PCT
+  const passed = type === 'pre' ? !!result : pct >= PASS_PCT
 
   return (
     <button
@@ -50,7 +50,7 @@ function TestCard({ label, type, course, result, locked, onTake }) {
           <p className="mat-sub">
             Score: {result.score}/{result.total}
             <span className={`test-score-pct ${passed ? 'tsp-pass' : 'tsp-fail'}`}>{pct}%</span>
-            {!passed && <span className="test-need"> · Need {PASS_PCT}% to pass</span>}
+            {type === 'post' && !passed && <span className="test-need"> · Retake required ({PASS_PCT}% needed)</span>}
           </p>
         ) : (
           <p className="mat-sub">Tap to start</p>
@@ -144,7 +144,7 @@ export default function BrowseCourses() {
     const hasTasks = courseTasks.length > 0
     const videoDone = !hasVideos || courseVideos.every(v => videoProg[v.id]?.completed)
     const taskDone = !hasTasks || courseTasks.every(t => taskApproved(submissions[t.id]))
-    const preDone = examPassed(results[`${course.id}-pre`])
+    const preDone = !!results[`${course.id}-pre`]
     const postDone = examPassed(results[`${course.id}-post`])
     // Only count requirements that actually exist for this session.
     const items = [preDone, postDone]

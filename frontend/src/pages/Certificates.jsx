@@ -1,19 +1,11 @@
 import { useState } from 'react'
-import { Award, Download, Eye, Lock, CheckCircle2, Sprout } from 'lucide-react'
+import { Award, Download, Eye, Lock, CheckCircle2, BookOpenCheck } from 'lucide-react'
 import { useUser } from '../UserContext'
 import { useCourses } from '../courseStore'
-import { sessionCompletion, useUserProgress } from '../completion'
+import { certificateIssueDate, sessionCompletion, useUserProgress } from '../completion'
 import CertificateModal from '../components/CertificateModal'
 import './Certificates.css'
 
-const HEAD_BG = { PBD: 'hd-pbd', LTS: 'hd-lts', AJD: 'hd-ajd', Admin: 'hd-admin' }
-
-// Deterministic issue date derived from course id (mock).
-const issueDateOf = id => {
-  const base = new Date('2024-02-01')
-  base.setDate(base.getDate() + id * 9)
-  return base
-}
 const fmtDate = d =>
   d.toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })
 
@@ -24,9 +16,14 @@ export default function Certificates() {
   const progress = useUserProgress(user?.id)
 
   // Real completion: video + task + pre-test + post-test all done.
-  const withComp = courses.map(c => ({ ...c, comp: sessionCompletion(c, progress) }))
+  const withComp = courses.map(c => ({
+    ...c,
+    comp: sessionCompletion(c, progress),
+    issuedAt: certificateIssueDate(c, progress),
+  }))
   const earned = withComp.filter(c => c.comp.status === 'completed')
   const locked = withComp.filter(c => c.comp.status !== 'completed')
+  const completionRate = courses.length ? Math.round((earned.length / courses.length) * 100) : 0
 
   return (
     <div className="certs-page">
@@ -35,21 +32,39 @@ export default function Certificates() {
         <p className="page-sub">Certificates of completion are issued once a course is fully finished</p>
       </div>
 
-      {/* Summary banner */}
-      <div className="cert-banner">
-        <div className="cert-banner-icon"><Award size={26} /></div>
-        <div>
-          <p className="cert-banner-num">{earned.length} {earned.length === 1 ? 'Certificate' : 'Certificates'} earned</p>
-          <p className="cert-banner-sub">
-            {locked.length > 0
-              ? `${locked.length} more available after you complete the remaining courses.`
-              : 'You have completed every available course. Congratulations!'}
-          </p>
+      <section className="cert-overview">
+        <div className="cert-overview-main">
+          <span className="cert-overview-icon"><Award size={28} /></span>
+          <div>
+            <p className="cert-overview-label">Certificate portfolio</p>
+            <p className="cert-overview-title">Your learning achievements, all in one place.</p>
+            <p className="cert-overview-copy">
+              {locked.length > 0
+                ? `Complete ${locked.length} remaining ${locked.length === 1 ? 'course' : 'courses'} to unlock every certificate.`
+                : 'All available course certificates have been earned.'}
+            </p>
+          </div>
         </div>
-      </div>
+        <div className="cert-overview-progress">
+          <div className="cert-progress-summary">
+            <div><strong>{earned.length}</strong><span>Earned</span></div>
+            <div><strong>{locked.length}</strong><span>In progress</span></div>
+            <div><strong>{completionRate}%</strong><span>Complete</span></div>
+          </div>
+          <div className="cert-progress-track" aria-label={`${completionRate}% of certificates earned`}>
+            <span style={{ width: `${completionRate}%` }} />
+          </div>
+          <p>Portfolio progress · {earned.length} of {courses.length} courses</p>
+        </div>
+      </section>
 
       {/* Earned */}
-      <h2 className="cert-section-title"><CheckCircle2 size={16} /> Earned Certificates</h2>
+      <div className="cert-section-heading">
+        <div>
+          <h2 className="cert-section-title"><CheckCircle2 size={17} /> Earned certificates</h2>
+        </div>
+        <span className="cert-count">{earned.length}</span>
+      </div>
       {earned.length === 0 ? (
         <div className="cert-empty">
           <Award size={36} />
@@ -58,22 +73,25 @@ export default function Certificates() {
       ) : (
         <div className="cert-grid">
           {earned.map(c => (
-            <div key={c.id} className="cert-card">
-              <div className={`cert-ribbon ${HEAD_BG[c.division] || 'hd-pbd'}`}>
-                <div className="cert-seal"><Sprout size={20} /></div>
-                <span className="cert-ribbon-div">{c.division}</span>
-              </div>
+            <article key={c.id} className="cert-card">
+              <div className="cert-card-mark"><Award size={42} /></div>
               <div className="cert-body">
-                <p className="cert-eyebrow">Certificate of Completion</p>
+                <div className="cert-card-top">
+                  <p className="cert-card-label">Certificate of Completion</p>
+                  <span className="cert-status"><CheckCircle2 size={12} /> Earned</span>
+                </div>
+                <div className="cert-card-meta"><span>{c.division}</span><i /> <span>Session {c.session}</span></div>
                 <h3 className="cert-course">{c.title}</h3>
-                <p className="cert-awarded">Awarded to <strong>{user.name}</strong></p>
-                <p className="cert-date">Issued {fmtDate(issueDateOf(c.id))}</p>
+                <div className="cert-issued">
+                  <div><span>Awarded to</span><strong>{user.name}</strong></div>
+                  <div><span>Issued</span><strong>{fmtDate(c.issuedAt)}</strong></div>
+                </div>
                 <div className="cert-actions">
-                  <button className="cert-btn cert-btn-view" onClick={() => setPreview(c)}><Eye size={14} /> View</button>
-                  <button className="cert-btn cert-btn-dl" onClick={() => setPreview(c)}><Download size={14} /> Download</button>
+                  <button className="cert-btn cert-btn-view" onClick={() => setPreview(c)}><Eye size={15} /> Preview</button>
+                  <button className="cert-btn cert-btn-dl" onClick={() => setPreview(c)}><Download size={15} /> Download</button>
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}
@@ -81,11 +99,16 @@ export default function Certificates() {
       {/* Locked */}
       {locked.length > 0 && (
         <>
-          <h2 className="cert-section-title locked-title"><Lock size={15} /> Not Yet Available</h2>
+          <div className="cert-section-heading locked-heading">
+            <div>
+              <h2 className="cert-section-title"><Lock size={16} /> In progress</h2>
+            </div>
+            <span className="cert-count muted">{locked.length}</span>
+          </div>
           <div className="cert-locked-grid">
             {locked.map(c => (
-              <div key={c.id} className="cert-locked">
-                <div className="cert-locked-icon"><Lock size={16} /></div>
+              <div key={c.id} className={`cert-locked cert-locked-${c.division.toLowerCase()}`}>
+                <div className="cert-locked-icon"><BookOpenCheck size={17} /></div>
                 <div className="cert-locked-info">
                   <p className="cert-locked-title">{c.title}</p>
                   <p className="cert-locked-meta">{c.division} · Session {c.session}</p>
@@ -104,7 +127,7 @@ export default function Certificates() {
         <CertificateModal
           name={user.name}
           course={preview}
-          date={issueDateOf(preview.id)}
+          date={preview.issuedAt}
           onClose={() => setPreview(null)}
         />
       )}

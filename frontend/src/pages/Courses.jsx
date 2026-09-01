@@ -53,13 +53,29 @@ export default function Courses() {
 
   return (
     <div className="courses-page">
-      <div className="page-header">
-        <span className="cv-eyebrow">Learning Hub</span>
-        <h1 className="page-title">Courses</h1>
-        <p className="page-sub">Choose your division to view its training sessions</p>
-      </div>
+      <section className="cv-hero">
+        <span className="cv-hero-icon"><BookOpen size={25} /></span>
+        <div className="cv-hero-copy">
+          <span className="cv-eyebrow">Learning sessions</span>
+          <h1>Develop practical skills for public service.</h1>
+          <p>Choose a service area to access its guided sessions, requirements, and learning progress.</p>
+        </div>
+        <div className="cv-hero-stat">
+          <strong>{courses.length}</strong>
+          <span>Available sessions</span>
+        </div>
+      </section>
 
-      <div className="cv-grid">
+      <section className="cv-browser">
+        <div className="cv-browser-head">
+          <div>
+            <span className="cv-section-label">Browse by division</span>
+            <h2>Select a learning area</h2>
+          </div>
+          <span className="cv-browser-count">{DIVISIONS.length} divisions</span>
+        </div>
+
+        <div className="cv-grid">
         {DIVISIONS.map(({ code, name, blurb, cls, Icon, img }) => {
           const s = statsFor(code)
           return (
@@ -98,7 +114,8 @@ export default function Courses() {
             </div>
           )
         })}
-      </div>
+        </div>
+      </section>
 
       {/* Division → sessions modal */}
       {active && (

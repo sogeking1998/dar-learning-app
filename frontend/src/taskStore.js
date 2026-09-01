@@ -3,6 +3,8 @@ import { supabase } from './supabaseClient'
 
 const BUCKET = 'task-files'
 const TASK_COLS = 'id, course_id, title, description, instructions'
+const missingColumn = (error, column) =>
+  !!error && new RegExp(`(?:column[^.]*${column}|${column}[^.]*schema cache)`, 'i').test(error.message || '')
 
 // Returns a map of { [course_id]: [tasks] }.
 export async function getTasksMap() {
@@ -55,11 +57,11 @@ export async function getSubmissionsForUser(userId) {
   if (!userId) return {}
   const { data, error } = await supabase
     .from('task_submissions')
-    .select('task_id, file_name, file_path, submitted_at, status, reviewed_at, reviewed_by')
+    .select('*')
     .eq('user_id', userId)
   if (error) { console.error('Load submissions failed:', error.message); return {} }
   const map = {}
-  for (const s of data || []) map[s.task_id] = s
+  for (const s of data || []) map[s.task_id] = { ...s, status: s.status || 'pending' }
   return map
 }
 
@@ -67,28 +69,67 @@ export async function submitTask(userId, taskId, file) {
   const ext = (file.name.split('.').pop() || '').toLowerCase()
   const path = `${userId}/${taskId}.${ext}`
 
-  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true })
+  // Insert first so projects with the original storage policies still work.
+  // If a previous attempt left the deterministic path behind, remove only that
+  // user's object and insert the replacement instead of requiring UPDATE access.
+  let { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false })
+  const duplicate = upErr && (Number(upErr.statusCode) === 409 || /already exists|duplicate/i.test(upErr.message || ''))
+  if (duplicate) {
+    const { error: removeErr } = await supabase.storage.from(BUCKET).remove([path])
+    if (removeErr) return { error: removeErr }
+    ;({ error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false }))
+  }
   if (upErr) return { error: upErr }
 
   // A new upload always resets the review — the admin must re-check it.
-  const { error } = await supabase.from('task_submissions').upsert(
-    {
-      user_id: userId, task_id: taskId, file_path: path, file_name: file.name,
-      submitted_at: new Date().toISOString(),
-      status: 'pending', reviewed_at: null, reviewed_by: null,
-    },
-    { onConflict: 'user_id,task_id' }
-  )
-  return { error, path }
+  const submission = {
+    user_id: userId, task_id: taskId, file_path: path, file_name: file.name,
+    submitted_at: new Date().toISOString(),
+  }
+  let { data, error } = await supabase.from('task_submissions')
+    .upsert(submission, { onConflict: 'user_id,task_id' })
+    .select('*')
+    .maybeSingle()
+  if (error) return { error, path }
+  if (!data) return { error: { message: 'The file uploaded, but the submission record could not be confirmed.' }, path }
+
+  // Reset an existing review on resubmission when the newer workflow columns
+  // exist. Legacy tables simply keep working until the migration is applied.
+  if (Object.prototype.hasOwnProperty.call(data, 'status')) {
+    const reset = { status: 'pending' }
+    if (Object.prototype.hasOwnProperty.call(data, 'reviewed_at')) reset.reviewed_at = null
+    if (Object.prototype.hasOwnProperty.call(data, 'reviewed_by')) reset.reviewed_by = null
+    const result = await supabase.from('task_submissions')
+      .update(reset)
+      .eq('user_id', userId).eq('task_id', taskId)
+      .select('*')
+      .maybeSingle()
+    if (result.error) return { error: result.error, path }
+    data = result.data || data
+  }
+  return { error: null, path, submission: { ...data, status: data.status || 'pending' } }
 }
 
 // Admin review: mark a student's submission passed or failed.
 export async function reviewSubmission(userId, taskId, status, reviewerId) {
-  const { data, error } = await supabase.from('task_submissions')
+  let { data, error } = await supabase.from('task_submissions')
     .update({ status, reviewed_at: new Date().toISOString(), reviewed_by: reviewerId })
     .eq('user_id', userId).eq('task_id', taskId)
-    .select('task_id, file_name, file_path, submitted_at, status, reviewed_at, reviewed_by')
+    .select('*')
     .maybeSingle()
+  if (missingColumn(error, 'reviewed_at') || missingColumn(error, 'reviewed_by')) {
+    ;({ data, error } = await supabase.from('task_submissions')
+      .update({ status })
+      .eq('user_id', userId).eq('task_id', taskId)
+      .select('*')
+      .maybeSingle())
+  }
+  if (missingColumn(error, 'status')) {
+    error = {
+      ...error,
+      message: 'The Supabase task_submissions table is missing the status column. Run supabase/migrations/add-task-submission-review-columns.sql in the Supabase SQL Editor, then try again.',
+    }
+  }
   if (error) console.error('Review submission failed:', error.message)
   return { data, error }
 }

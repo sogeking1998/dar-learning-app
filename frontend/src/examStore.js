@@ -76,7 +76,7 @@ export async function getResultsForUser(userId) {
   if (!userId) return {}
   const { data, error } = await supabase
     .from('exam_results')
-    .select('course_id, type, score, total, pct, answers')
+    .select('course_id, type, score, total, pct, answers, taken_at')
     .eq('user_id', userId)
   if (error) { console.error('Load results failed:', error.message); return {} }
   const map = {}
