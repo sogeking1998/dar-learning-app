@@ -13,8 +13,13 @@ export function UserProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!session) return
+    if (!session) {
+      setUser(null)
+      setLoading(false)
+      return
+    }
     let active = true
+    setLoading(true)
 
     supabase
       .from('profiles')

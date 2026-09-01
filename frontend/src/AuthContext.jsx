@@ -12,32 +12,62 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let active = true
+    let requestId = 0
 
     const loadMeta = async uid => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('role, admin_status, must_reset_password')
         .eq('id', uid)
         .single()
+
+      if (error) console.error('Failed to load auth profile:', error.message)
+      return data
+    }
+
+    const applySession = async nextSession => {
+      const currentRequest = ++requestId
       if (!active) return
+
+      setSession(nextSession)
+      if (!nextSession) {
+        setRole(null)
+        setAdminStatus(null)
+        setMustReset(false)
+        setLoading(false)
+        return
+      }
+
+      const data = await loadMeta(nextSession.user.id)
+      if (!active || currentRequest !== requestId) return
       setRole(data?.role || 'employee')
       setAdminStatus(data?.admin_status || 'none')
       setMustReset(!!data?.must_reset_password)
+      setLoading(false)
     }
 
     const init = async () => {
-      const { data } = await supabase.auth.getSession()
-      if (!active) return
-      setSession(data.session)
-      if (data.session) await loadMeta(data.session.user.id)
-      setLoading(false)
+      try {
+        const { data, error } = await supabase.auth.getSession()
+        if (error) console.error('Failed to restore auth session:', error.message)
+        await applySession(data?.session ?? null)
+      } catch (error) {
+        console.error('Failed to initialize authentication:', error)
+        if (active) setLoading(false)
+      }
     }
     init()
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-      if (session) await loadMeta(session.user.id)
-      else { setRole(null); setAdminStatus(null) }
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      // Supabase invokes this callback while its auth lock is held. Starting and
+      // awaiting another Supabase request here can deadlock cold-start session
+      // restoration. Defer the work so the callback returns synchronously.
+      setTimeout(() => {
+        applySession(nextSession).catch(error => {
+          console.error('Failed to apply auth session:', error)
+          if (active) setLoading(false)
+        })
+      }, 0)
     })
 
     return () => { active = false; sub.subscription.unsubscribe() }
