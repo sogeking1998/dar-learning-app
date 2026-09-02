@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import {
   LayoutDashboard, LineChart, LogOut, Megaphone,
   Users, BookOpen, BarChart3, Award, ArrowRight, Sparkles, CheckCircle2, MessageSquare,
-  Menu, X,
+  Menu, X, History,
 } from 'lucide-react'
 import { useAuth } from '../AuthContext'
 import { MessagesProvider } from '../MessagesContext'
@@ -20,6 +20,7 @@ const AdminAnalytics = lazy(() => import('./AdminAnalytics'))
 const AdminAnnouncements = lazy(() => import('./AdminAnnouncements'))
 const AdminUsers = lazy(() => import('./AdminUsers'))
 const Messages = lazy(() => import('./Messages'))
+const AdminAuditHistory = lazy(() => import('./AdminAuditHistory'))
 
 const DIVISIONS = ['PBD', 'LTS', 'AJD', 'Admin']
 
@@ -30,6 +31,7 @@ const NAV = [
   { id: 'users',         label: 'User Management',  icon: Users },
   { id: 'messages',      label: 'Messages',         icon: MessageSquare },
   { id: 'announcements', label: 'Announcements',    icon: Megaphone },
+  { id: 'audit',         label: 'Audit History',    icon: History },
 ]
 
 export default function AdminDashboard() {
@@ -106,6 +108,7 @@ function AdminConsole() {
             {view === 'users' && <AdminUsers />}
             {view === 'messages' && <Messages />}
             {view === 'announcements' && <AdminAnnouncements />}
+            {view === 'audit' && <AdminAuditHistory />}
           </Suspense>
         </div>
       </div>
@@ -145,10 +148,10 @@ function Overview({ onNavigate }) {
   const avgCompletion = Math.round(employees.reduce((s, e) => s + e.progress, 0) / totalEmployees)
 
   const stats = [
-    { icon: Users, value: totalEmployees, label: 'Enrolled Employees', tone: 'dt-green' },
-    { icon: BookOpen, value: 9, label: 'Active Modules', tone: 'dt-blue' },
-    { icon: BarChart3, value: `${avgCompletion}%`, label: 'Avg. Completion', tone: 'dt-amber' },
-    { icon: Award, value: certsIssued, label: 'Certificates Issued', tone: 'dt-purple' },
+    { icon: Users, value: totalEmployees, label: 'Enrolled Employees', note: 'Across all divisions', tone: 'dt-green' },
+    { icon: BookOpen, value: 9, label: 'Active Modules', note: 'Published learning content', tone: 'dt-blue' },
+    { icon: BarChart3, value: `${avgCompletion}%`, label: 'Avg. Completion', note: 'Overall learner progress', tone: 'dt-amber' },
+    { icon: Award, value: certsIssued, label: 'Certificates Issued', note: 'Completed learning paths', tone: 'dt-purple' },
   ]
 
   const byDivision = DIVISIONS.map(d => {
@@ -163,14 +166,18 @@ function Overview({ onNavigate }) {
       <div className="dash-banner">
         <div className="dash-banner-glow" />
         <div className="dash-banner-text">
+          <span className="dash-banner-kicker">Administrative overview</span>
           <h2>Welcome back, Admin <Sparkles size={18} /></h2>
           <p>{totalEmployees} employees enrolled · {avgCompletion}% average completion across {byDivision.length} divisions.</p>
-          <button className="dash-banner-btn" onClick={() => onNavigate('courses')}>
-            Manage Sessions <ArrowRight size={15} />
-          </button>
+          <div className="dash-banner-actions">
+            <button className="dash-banner-btn" onClick={() => onNavigate('courses')}>
+              Manage Sessions <ArrowRight size={15} />
+            </button>
+          </div>
         </div>
         <svg className="dash-banner-art" viewBox="0 0 200 130" aria-hidden="true">
-          <circle cx="150" cy="44" r="44" fill="rgba(255,255,255,0.10)" />
+          <path className="dash-art-grid" d="M18 18H188M18 48H188M18 78H188M18 108H188M34 10V118M74 10V118M114 10V118M154 10V118" />
+          <path className="dash-art-line" d="M24 94L63 76L94 83L130 49L180 28" />
           <rect x="100" y="74" width="16" height="34" rx="4" fill="rgba(255,255,255,0.35)" />
           <rect x="124" y="58" width="16" height="50" rx="4" fill="rgba(255,255,255,0.55)" />
           <rect x="148" y="42" width="16" height="66" rx="4" fill="#bbf7d0" />
@@ -180,12 +187,13 @@ function Overview({ onNavigate }) {
 
       {/* Stat tiles */}
       <div className="dash-stats">
-        {stats.map(({ icon: Icon, value, label, tone }) => (
-          <div key={label} className="dash-card dash-tile">
+        {stats.map(({ icon: Icon, value, label, note, tone }) => (
+          <div key={label} className={`dash-card dash-tile ${tone}`}>
             <div className={`dash-ic ${tone}`}><Icon size={20} /></div>
-            <div>
+            <div className="dash-tile-copy">
               <p className="dash-tile-value">{value}</p>
               <p className="dash-tile-label">{label}</p>
+              <p className="dash-tile-note">{note}</p>
             </div>
           </div>
         ))}
@@ -203,7 +211,6 @@ function Overview({ onNavigate }) {
                 <span className="dash-div-name">{d.division}</span>
                 <div className="dash-div-track"><div className="dash-div-fill" style={{ width: `${d.avg}%` }} /></div>
                 <span className="dash-div-pct">{d.avg}%</span>
-                <span className="dash-div-count">{d.count} ppl</span>
               </div>
             ))}
           </div>

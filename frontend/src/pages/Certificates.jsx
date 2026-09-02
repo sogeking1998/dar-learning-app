@@ -2,12 +2,88 @@ import { useState } from 'react'
 import { Award, Download, Eye, Lock, CheckCircle2, BookOpenCheck } from 'lucide-react'
 import { useUser } from '../UserContext'
 import { useCourses } from '../courseStore'
-import { certificateIssueDate, sessionCompletion, useUserProgress } from '../completion'
+import { certificateIssueDate, PASS_PCT, sessionCompletion, useUserProgress } from '../completion'
 import CertificateModal from '../components/CertificateModal'
 import './Certificates.css'
 
 const fmtDate = d =>
   d.toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })
+
+function ProgressBreakdown({ course, progress }) {
+  const videos = progress.sessionVideos[course.id] || []
+  const watched = videos.filter(v => progress.videoProg[v.id]?.completed).length
+  const tasks = progress.tasks[course.id] || []
+  const approved = tasks.filter(t => progress.submissions[t.id]?.status === 'passed').length
+  const pending = tasks.filter(t => progress.submissions[t.id]?.status === 'pending').length
+  const failed = tasks.filter(t => progress.submissions[t.id]?.status === 'failed').length
+  const pre = progress.results[`${course.id}-pre`]
+  const post = progress.results[`${course.id}-post`]
+  const remaining = []
+  if (!pre) remaining.push('Complete the Pre-Test')
+  if (watched < videos.length) remaining.push(`Watch ${videos.length - watched} remaining video${videos.length - watched === 1 ? '' : 's'}`)
+  if (approved < tasks.length) remaining.push(
+    pending && approved + pending === tasks.length
+      ? `Wait for ${pending} task review${pending === 1 ? '' : 's'}`
+      : `Complete ${tasks.length - approved} remaining task${tasks.length - approved === 1 ? '' : 's'}`
+  )
+  if ((post?.pct ?? 0) < PASS_PCT) remaining.push(`Pass the Post-Test with at least ${PASS_PCT}%`)
+
+  const rows = [
+    {
+      label: 'Pre-Test',
+      value: pre ? `${pre.pct}% · Completed` : 'Not taken',
+      state: pre ? 'done' : 'todo',
+    },
+    {
+      label: 'Videos',
+      value: videos.length ? `${watched} of ${videos.length} watched` : 'Not required',
+      state: !videos.length || watched === videos.length ? 'done' : watched ? 'active' : 'todo',
+    },
+    {
+      label: 'Tasks',
+      value: !tasks.length
+        ? 'Not required'
+        : failed
+          ? `${failed} need${failed === 1 ? 's' : ''} revision`
+          : pending
+            ? `${pending} awaiting review`
+            : `${approved} of ${tasks.length} approved`,
+      state: !tasks.length || approved === tasks.length ? 'done' : pending ? 'active' : 'todo',
+    },
+    {
+      label: 'Post-Test',
+      value: post?.pct >= PASS_PCT
+        ? `${post.pct}% · Passed`
+        : post
+          ? `${post.pct}% · ${PASS_PCT}% required`
+          : 'Not taken',
+      state: post?.pct >= PASS_PCT ? 'done' : post ? 'active' : 'todo',
+    },
+  ]
+
+  return (
+    <details className="cert-breakdown">
+      <summary>View progress breakdown</summary>
+      <div className="cert-breakdown-list">
+        {rows.map(row => (
+          <div key={row.label} className="cert-breakdown-row">
+            <span className={`cbd-dot cbd-${row.state}`} aria-hidden="true" />
+            <span className="cbd-label">{row.label}</span>
+            <span className={`cbd-value cbd-${row.state}`}>{row.value}</span>
+          </div>
+        ))}
+        <div className="cbd-remaining">
+          <span>Remaining requirements</span>
+          {remaining.length ? (
+            <ul>{remaining.map(item => <li key={item}>{item}</li>)}</ul>
+          ) : (
+            <p>All requirements completed.</p>
+          )}
+        </div>
+      </div>
+    </details>
+  )
+}
 
 export default function Certificates() {
   const { user } = useUser()
@@ -22,7 +98,9 @@ export default function Certificates() {
     issuedAt: certificateIssueDate(c, progress),
   }))
   const earned = withComp.filter(c => c.comp.status === 'completed')
-  const locked = withComp.filter(c => c.comp.status !== 'completed')
+  const locked = withComp
+    .filter(c => c.comp.status !== 'completed')
+    .sort((a, b) => b.comp.pct - a.comp.pct)
   const completionRate = courses.length ? Math.round((earned.length / courses.length) * 100) : 0
 
   return (
@@ -117,6 +195,7 @@ export default function Certificates() {
                   <div className="clp-bar"><div className="clp-fill" style={{ width: `${c.comp.pct}%` }} /></div>
                   <span className="clp-pct">{c.comp.pct}%</span>
                 </div>
+                <ProgressBreakdown course={c} progress={progress} />
               </div>
             ))}
           </div>

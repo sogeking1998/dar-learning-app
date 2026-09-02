@@ -9,6 +9,7 @@
 // the "users update own profile" policy applies. This is what lets a plain admin
 // (who has no policy to edit other people's profiles) create student accounts.
 import { createClient } from '@supabase/supabase-js'
+import { addAuditLog } from './auditStore'
 
 const URL = import.meta.env.VITE_SUPABASE_URL
 const KEY = import.meta.env.VITE_SUPABASE_KEY
@@ -51,6 +52,18 @@ async function createAccount({ email, name, division, position, gender, role, ad
     })
     .eq('id', newId)
   if (pErr) return { error: pErr }
+
+  // Account creation happens on an isolated client authenticated as the new
+  // user, so the database trigger cannot identify the administrator. Record it
+  // from the main staff session instead without blocking successful creation.
+  const { error: auditError } = await addAuditLog({
+    action: 'created',
+    entityType: 'user',
+    entityId: newId,
+    entityLabel: (name || '').trim() || email,
+    details: { after: { id: newId, email, name, division, position, gender, role, admin_status: adminStatus } },
+  })
+  if (auditError) console.error('Failed to record user creation audit:', auditError.message)
 
   return { email }
 }

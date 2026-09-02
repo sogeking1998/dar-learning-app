@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { useCourses } from '../courseStore'
 import { useUser } from '../UserContext'
-import { sessionCompletion, useUserProgress } from '../completion'
+import { PASS_PCT, sessionCompletion, useUserProgress } from '../completion'
 import pbdImg from '../assets/courses/pbd.png'
 import ltsImg from '../assets/courses/lts.jpeg'
 import ajdImg from '../assets/courses/ajd.png'
@@ -25,6 +25,54 @@ const STATUS = {
   completed:   { label: 'Completed',   cls: 'st-done' },
   in_progress: { label: 'In Progress', cls: 'st-progress' },
   not_started: { label: 'Not Started', cls: 'st-pending' },
+}
+
+function SessionProgressBreakdown({ course, progress }) {
+  const videos = progress.sessionVideos[course.id] || []
+  const watched = videos.filter(v => progress.videoProg[v.id]?.completed).length
+  const tasks = progress.tasks[course.id] || []
+  const approved = tasks.filter(t => progress.submissions[t.id]?.status === 'passed').length
+  const pending = tasks.filter(t => progress.submissions[t.id]?.status === 'pending').length
+  const pre = progress.results[`${course.id}-pre`]
+  const post = progress.results[`${course.id}-post`]
+  const remaining = []
+
+  if (!pre) remaining.push('Complete the Pre-Test')
+  if (watched < videos.length) remaining.push(`Watch ${videos.length - watched} remaining video${videos.length - watched === 1 ? '' : 's'}`)
+  if (approved < tasks.length) remaining.push(
+    pending && approved + pending === tasks.length
+      ? `Wait for ${pending} task review${pending === 1 ? '' : 's'}`
+      : `Complete ${tasks.length - approved} remaining task${tasks.length - approved === 1 ? '' : 's'}`
+  )
+  if ((post?.pct ?? 0) < PASS_PCT) remaining.push(`Pass the Post-Test with at least ${PASS_PCT}%`)
+
+  const items = [
+    ['Videos watched', videos.length ? `${watched}/${videos.length}` : 'Not required', !videos.length || watched === videos.length],
+    ['Pre-Test status', pre ? `Completed · ${pre.pct}%` : 'Not taken', !!pre],
+    ['Post-Test score', post ? `${post.pct}%${post.pct >= PASS_PCT ? ' · Passed' : ' · Retake required'}` : 'Not taken', post?.pct >= PASS_PCT],
+    ['Task submissions', tasks.length ? `${approved}/${tasks.length} approved${pending ? ` · ${pending} in review` : ''}` : 'Not required', !tasks.length || approved === tasks.length],
+  ]
+
+  return (
+    <details className="cv-session-breakdown">
+      <summary>Progress breakdown · {course.comp.pct}%</summary>
+      <div className="cv-breakdown-grid">
+        {items.map(([label, value, done]) => (
+          <div key={label} className="cv-breakdown-item">
+            <span className={`cv-breakdown-dot${done ? ' done' : ''}`} />
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </div>
+        ))}
+      </div>
+      <div className="cv-remaining">
+        <strong>Remaining requirements</strong>
+        {remaining.length
+          ? <ul>{remaining.map(item => <li key={item}>{item}</li>)}</ul>
+          : <p>All requirements completed.</p>}
+      </div>
+    </details>
+  )
 }
 
 export default function Courses() {
@@ -166,6 +214,7 @@ export default function Courses() {
                             <ExternalLink size={16} className="cv-session-open" />
                           </div>
                         </a>
+                        <SessionProgressBreakdown course={s} progress={progress} />
                       </li>
                     )
                   })}

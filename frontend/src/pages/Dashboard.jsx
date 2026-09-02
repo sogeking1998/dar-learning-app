@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { useCourses } from '../courseStore'
 import { useUser } from '../UserContext'
-import { sessionCompletion, useUserProgress } from '../completion'
+import { nextLearningStep, sessionCompletion, useUserProgress } from '../completion'
 import { getSessionDurations, formatVideoDuration } from '../videoStore'
 import './Dashboard.css'
 
@@ -114,6 +114,10 @@ export default function Dashboard() {
   const featured =
     [...withComp].filter(c => c.comp.status === 'in_progress').sort((a, b) => b.comp.pct - a.comp.pct)[0]
     || withComp.find(c => c.comp.status === 'not_started')
+  const nextStep = featured ? nextLearningStep(featured, progress) : null
+  const continueHref = featured
+    ? `/session/${featured.id}${nextStep?.query ? `?${nextStep.query}` : ''}`
+    : null
   const allDone = total > 0 && completed === total
 
   return (
@@ -136,10 +140,10 @@ export default function Dashboard() {
       </div>
 
       {/* Continue-learning spotlight */}
-      {featured && (
+      {featured && !progress.loading && (
         <a
           className="db-continue"
-          href={`/session/${featured.id}`}
+          href={continueHref}
           target="_blank"
           rel="noreferrer"
         >
@@ -153,6 +157,7 @@ export default function Dashboard() {
               {featured.comp.status === 'in_progress' ? 'Continue where you left off' : 'Ready when you are'}
             </p>
             <p className="dc-title">{featured.division}: Session {featured.session} – {featured.title}</p>
+            {nextStep && <p className="dc-next">Next: {nextStep.label}</p>}
             <div className="dc-bar-wrap">
               <div className="dc-bar"><div className="dc-fill" style={{ width: `${featured.comp.pct}%` }} /></div>
               <span className="dc-pct">{featured.comp.pct}%</span>

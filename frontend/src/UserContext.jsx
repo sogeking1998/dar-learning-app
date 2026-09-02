@@ -9,11 +9,12 @@ const EDITABLE_COLS = ['name', 'email', 'division', 'position', 'gender']
 
 export function UserProvider({ children }) {
   const { session } = useAuth()
+  const userId = session?.user?.id
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!session) {
+    if (!userId) {
       setUser(null)
       setLoading(false)
       return
@@ -24,24 +25,28 @@ export function UserProvider({ children }) {
     supabase
       .from('profiles')
       .select('*')
-      .eq('id', session.user.id)
+      .eq('id', userId)
       .single()
       .then(({ data }) => {
         if (!active) return
         setUser({
-          id: session.user.id,
+          id: userId,
           name: data?.name || '',
           email: data?.email || session.user.email || '',
           division: data?.division || '',
           position: data?.position || '',
           gender: data?.gender || '',
           joined: data?.joined || '',
+          lastSeen: data?.last_seen || null,
         })
         setLoading(false)
       })
 
     return () => { active = false }
-  }, [session])
+  // Depend on the stable account ID, not the entire session object. Supabase
+  // replaces the session object during token refresh and cross-tab sync; that
+  // must not send an unchanged user back through the full-page loader.
+  }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateUser = async patch => {
     // Optimistic local update so the UI feels instant.

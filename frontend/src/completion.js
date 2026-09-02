@@ -59,6 +59,47 @@ export function sessionCompletion(course, { results = {}, submissions = {}, vide
   return { videoDone, taskDone, preDone, postDone, done, pct, status }
 }
 
+// Pick the next concrete action for the dashboard's Continue Learning card.
+// Prefer a partially watched video over one that has not been started.
+export function nextLearningStep(course, { results = {}, submissions = {}, videoProg = {}, tasks = {}, sessionVideos = {} }) {
+  if (!results[`${course.id}-pre`]) {
+    return { type: 'pre', label: 'Take the Pre-Test', query: 'continue=pre' }
+  }
+
+  const incompleteVideos = (sessionVideos[course.id] || []).filter(v => !videoProg[v.id]?.completed)
+  const video = incompleteVideos.find(v => (videoProg[v.id]?.position || 0) > 0) || incompleteVideos[0]
+  if (video) {
+    const resuming = (videoProg[video.id]?.position || 0) > 0
+    return {
+      type: 'video',
+      label: resuming ? `Resume ${video.title || 'video'}` : `Watch ${video.title || 'next video'}`,
+      query: `continue=video&item=${encodeURIComponent(video.id)}`,
+    }
+  }
+
+  const courseTasks = tasks[course.id] || []
+  const task = courseTasks.find(t => submissions[t.id]?.status === 'failed')
+    || courseTasks.find(t => !submissions[t.id])
+  if (task) {
+    return {
+      type: 'task',
+      label: submissions[task.id]?.status === 'failed' ? `Revise ${task.title}` : `Submit ${task.title}`,
+      query: `continue=task&item=${encodeURIComponent(task.id)}`,
+    }
+  }
+
+  if (!examPassed(results[`${course.id}-post`])) {
+    const retake = !!results[`${course.id}-post`]
+    return { type: 'post', label: retake ? 'Retake the Post-Test' : 'Take the Post-Test', query: 'continue=post' }
+  }
+
+  if (courseTasks.some(t => !taskApproved(submissions[t.id]))) {
+    return { type: 'tasks', label: 'Check task review status', query: 'continue=tasks' }
+  }
+
+  return null
+}
+
 // Loads everything needed to compute completion for a user.
 export function useUserProgress(userId) {
   const [data, setData] = useState({ results: {}, submissions: {}, videoProg: {}, tasks: {}, sessionVideos: {}, loading: true })

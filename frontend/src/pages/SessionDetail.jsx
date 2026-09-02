@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import {
   MonitorPlay, FileText, Download, CheckCircle2, ClipboardCheck,
-  BookOpen, ArrowLeft, Award, Lock, Eye
+  BookOpen, ArrowLeft, Award, Lock, Eye, AlertTriangle
 } from 'lucide-react'
 import { getCourses } from '../courseStore'
 import { useUser } from '../UserContext'
@@ -52,6 +52,7 @@ const fmtTime = s => {
 
 export default function SessionDetail() {
   const { courseId } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useUser()
   const userId = user?.id
 
@@ -102,6 +103,33 @@ export default function SessionDetail() {
   useEffect(() => { loadResults() }, [userId])    // eslint-disable-line
   useEffect(() => { loadVideoProg() }, [userId])  // eslint-disable-line
 
+  // Continue Learning links open the exact next requirement. Consume the
+  // query once so closing the modal does not immediately reopen it.
+  useEffect(() => {
+    if (!course) return
+    const action = searchParams.get('continue')
+    const itemId = searchParams.get('item')
+    if (!action) return
+
+    if (action === 'video') {
+      const video = videos.find(v => String(v.id) === itemId)
+      if (!video) return
+      setVideoModal({ course, video })
+    } else if (action === 'task') {
+      const task = tasks.find(t => String(t.id) === itemId)
+      if (!task) return
+      setTaskModal(task)
+    } else if (action === 'pre' || action === 'post') {
+      setQuiz({ type: action, priorResult: results[`${course.id}-${action}`] })
+    } else if (action === 'tasks') {
+      requestAnimationFrame(() => document.getElementById('session-tasks')?.scrollIntoView({ behavior: 'smooth' }))
+    } else {
+      return
+    }
+
+    setSearchParams({}, { replace: true })
+  }, [course, videos, tasks, results, searchParams, setSearchParams])
+
   // Keep the browser tab title meaningful for the standalone view.
   useEffect(() => {
     if (course) document.title = `Session ${course.session} — ${course.title}`
@@ -130,13 +158,16 @@ export default function SessionDetail() {
   const totalVideoSecs = videos.reduce((sum, v) => sum + (durations[v.id] || 0), 0)
   const videoDurationLabel = formatVideoDuration(totalVideoSecs)
   const taskDoneCount = tasks.filter(t => taskApproved(submissions[t.id])).length
+  const videoPct = videos.length ? Math.round((watchedCount / videos.length) * 100) : 100
+  const taskPct = tasks.length ? Math.round((taskDoneCount / tasks.length) * 100) : 100
 
   // Same completion logic as the Browse Courses card.
   const videoDone = !course.hasVideo || videos.length === 0 || videos.every(v => videoProg[v.id]?.completed)
   const taskDone = tasks.length === 0 || tasks.every(t => taskApproved(submissions[t.id]))
   const postPassed = examPassed(postResult)
   const items = [videoDone, taskDone, !!preResult, postPassed]
-  const pct = Math.round((items.filter(Boolean).length / items.length) * 100)
+  const completedRequirementCount = items.filter(Boolean).length
+  const pct = Math.round((completedRequirementCount / items.length) * 100)
   const issuedAt = certificateIssueDate(course, {
     results,
     submissions,
@@ -172,7 +203,7 @@ export default function SessionDetail() {
               }}
             />
           </div>
-          <span className="sd-progress-pct">{pct}% Complete</span>
+          <span className="sd-progress-pct"><strong>{pct}%</strong><small>Complete</small></span>
         </div>
       </header>
 
@@ -181,35 +212,28 @@ export default function SessionDetail() {
         <div className="sd-stat">
           <MonitorPlay size={20} className="sd-stat-ic icon-video" />
           <div><p className="sd-stat-num">{watchedCount}/{videos.length}</p><p className="sd-stat-lbl">Videos watched</p></div>
+          {videoDone ? <CheckCircle2 className="sd-stat-state done" size={15} /> : <AlertTriangle className="sd-stat-state pending" size={15} />}
         </div>
         <div className="sd-stat">
           <ClipboardCheck size={20} className="sd-stat-ic icon-tasks" />
           <div><p className="sd-stat-num">{taskDoneCount}/{tasks.length}</p><p className="sd-stat-lbl">Tasks done</p></div>
+          {taskDone ? <CheckCircle2 className="sd-stat-state done" size={15} /> : <AlertTriangle className="sd-stat-state pending" size={15} />}
         </div>
         <div className="sd-stat">
           <FileText size={20} className="sd-stat-ic icon-pretest" />
           <div><p className="sd-stat-num">{preResult ? `${preResult.pct}%` : '—'}</p><p className="sd-stat-lbl">Pre-Test score</p></div>
+          {preResult ? <CheckCircle2 className="sd-stat-state done" size={15} /> : <AlertTriangle className="sd-stat-state pending" size={15} />}
         </div>
         <div className="sd-stat">
           <FileText size={20} className="sd-stat-ic icon-posttest" />
           <div><p className="sd-stat-num">{postResult ? `${postResult.pct}%` : '—'}</p><p className="sd-stat-lbl">{postResult && !postPassed ? 'Retake required' : 'Post-Test'}</p></div>
+          {postPassed ? <CheckCircle2 className="sd-stat-state done" size={15} /> : <AlertTriangle className="sd-stat-state pending" size={15} />}
         </div>
       </div>
 
       <div className="sd-learning-plan">
-        <div className="sd-plan-head">
-          <div className="sd-plan-heading">
-            <span className="sd-plan-icon"><BookOpen size={20} /></span>
-            <div>
-              <span className="sd-plan-kicker">Session workspace</span>
-              <h2>Learning requirements</h2>
-            </div>
-          </div>
-          <span className="sd-plan-context">{course.division} · {course.code}</span>
-        </div>
-
       {/* Video lectures */}
-      <section className="sd-section">
+      <section id="session-videos" className="sd-section">
         <h2 className="sd-section-title"><MonitorPlay size={18} className="icon-video" /> Video Lectures</h2>
         {videos.length === 0 ? (
           <p className="sd-none">No videos uploaded yet.</p>
@@ -250,7 +274,7 @@ export default function SessionDetail() {
       </section>
 
       {/* Tasks */}
-      <section className="sd-section">
+      <section id="session-tasks" className="sd-section">
         <h2 className="sd-section-title"><ClipboardCheck size={18} className="icon-tasks" /> Tasks</h2>
         {tasks.length === 0 ? (
           <p className="sd-none">No tasks for this session.</p>
@@ -285,7 +309,7 @@ export default function SessionDetail() {
       </section>
 
       {/* Tests */}
-      <section className="sd-section">
+      <section id="session-assessments" className="sd-section">
         <h2 className="sd-section-title"><FileText size={18} className="icon-pretest" /> Assessments</h2>
         <div className="sd-tests">
           <button className={`sd-test ${preResult ? 'done' : ''}`} onClick={() => setQuiz({ type: 'pre', priorResult: preResult })}>
@@ -369,6 +393,33 @@ export default function SessionDetail() {
             </div>
           </div>
         )}
+      </section>
+
+      <section className="sd-overview">
+        <div className="sd-overview-head">
+          <div><span>Progress overview</span><small>{completedRequirementCount} of {items.length} requirements completed</small></div>
+          <strong>{pct === 100 ? 'Session complete' : `${items.length - completedRequirementCount} remaining`}</strong>
+        </div>
+        <div className="sd-overview-body">
+          <div className="sd-overall-score" style={{ '--score': `${pct * 3.6}deg` }}>
+            <div><strong>{pct}%</strong><span>Overall</span></div>
+          </div>
+          <div className="sd-overview-bars">
+            {[
+              { label: 'Videos', value: videoDone ? 100 : videoPct, tone: 'ov-green', detail: videoDone ? 'Complete' : `${watchedCount}/${videos.length} watched` },
+              { label: 'Tasks', value: taskDone ? 100 : taskPct, tone: 'ov-amber', detail: taskDone ? 'Complete' : `${taskDoneCount}/${tasks.length} approved` },
+              { label: 'Pre-Test', value: preResult ? 100 : 0, tone: 'ov-blue', detail: preResult ? `Completed · Score ${preResult.pct}%` : 'Not taken' },
+              { label: 'Post-Test', value: postPassed ? 100 : 0, tone: 'ov-purple', detail: postPassed ? `Passed · Score ${postResult.pct}%` : postResult ? `Retake · Score ${postResult.pct}%` : 'Not taken' },
+            ].map(({ label, value, tone, detail }) => (
+              <div className="sd-overview-row" key={label}>
+                <span>{label}</span>
+                <div><i className={tone} style={{ width: `${value}%` }} /></div>
+                <strong className={value === 100 ? 'complete' : ''}>{detail}</strong>
+              </div>
+            ))}
+          </div>
+          <blockquote><span>“</span><p>{pct === 100 ? 'Excellent work. You completed every session requirement.' : 'Keep going! You’re making meaningful progress.'}</p></blockquote>
+        </div>
       </section>
       </div>
 

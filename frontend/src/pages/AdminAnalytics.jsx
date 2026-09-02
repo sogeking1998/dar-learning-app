@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import {
   ClipboardList, CheckCircle2, TrendingUp, TrendingDown, Target,
-  ArrowUp, MoreVertical, Sparkles,
+  ArrowUp, Sparkles,
 } from 'lucide-react'
 import { useCourses } from '../courseStore'
 import './AdminAnalytics.css'
 
-const DIVISIONS = ['PBD', 'LTS', 'AJD', 'Admin']
-const GREEN = '#22e07b'
+const DIVISIONS = ['All', 'PBD', 'LTS', 'AJD', 'Admin']
+const GREEN = '#1b9a5a'
 
 // Demo pre/post score bands derived from the course id (until real analytics).
 const toModule = c => {
@@ -77,7 +77,7 @@ function TickGauge({ value }) {
 }
 
 function GroupedBars({ data }) {
-  const W = 540, H = 250, pad = { l: 30, r: 12, t: 14, b: 44 }
+  const W = 900, H = 280, pad = { l: 36, r: 18, t: 26, b: 42 }
   const cw = W - pad.l - pad.r, ch = H - pad.t - pad.b
   const groupW = cw / data.length, barW = Math.min(24, groupW / 3.4)
   const y = v => pad.t + ch - (v / 100) * ch
@@ -95,7 +95,11 @@ function GroupedBars({ data }) {
           <g key={d.id}>
             <rect x={gx - barW - 3} y={y(d.pre)} width={barW} height={pad.t + ch - y(d.pre)} rx="5" fill="#cdd3e0" />
             <rect x={gx + 3} y={y(d.post)} width={barW} height={pad.t + ch - y(d.post)} rx="5" fill={GREEN} className="an-post-bar" />
-            <text x={gx} y={H - pad.b + 17} textAnchor="middle" className="an-axis-x">S{d.session}</text>
+            <text x={gx - (barW / 2) - 3} y={y(d.pre) - 7} textAnchor="middle" className="an-bar-score an-bar-score-pre">{d.pre}%</text>
+            <text x={gx + (barW / 2) + 3} y={y(d.post) - 7} textAnchor="middle" className="an-bar-score an-bar-score-post">{d.post}%</text>
+            <text x={gx} y={H - pad.b + 17} textAnchor="middle" className="an-axis-x">
+              {data.some(item => item.division !== data[0]?.division) ? `${d.division} S${d.session}` : `S${d.session}`}
+            </text>
           </g>
         )
       })}
@@ -103,18 +107,22 @@ function GroupedBars({ data }) {
   )
 }
 
-const Menu = () => <button className="sn-menu" aria-label="More"><MoreVertical size={16} /></button>
-
 export default function AdminAnalytics() {
-  const [division, setDivision] = useState('PBD')
+  const [division, setDivision] = useState('All')
   const { courses } = useCourses()
-  const data = courses.filter(c => c.division === division).map(toModule).sort((a, b) => a.session - b.session)
+  const data = courses
+    .filter(c => division === 'All' || c.division === division)
+    .map(toModule)
+    .sort((a, b) => a.division.localeCompare(b.division) || a.session - b.session)
+  const divisionLabel = division === 'All' ? 'All divisions' : `${division} division`
 
   const avgPre = Math.round(data.reduce((s, d) => s + d.pre, 0) / (data.length || 1))
   const avgPost = Math.round(data.reduce((s, d) => s + d.post, 0) / (data.length || 1))
   const improvement = avgPost - avgPre
   const passCount = data.filter(d => d.post >= 75).length
   const passRate = Math.round((passCount / (data.length || 1)) * 100)
+  const signedImprovement = `${improvement >= 0 ? '+' : ''}${improvement}%`
+  const performanceMessage = passRate >= 75 ? 'Strong performance' : passRate >= 50 ? 'Progress is building' : 'Opportunity to improve'
 
   const byPost = [...data].sort((a, b) => b.post - a.post)
   const fallback = { session: '—', title: 'No sessions', post: 0 }
@@ -124,13 +132,17 @@ export default function AdminAnalytics() {
     <div className="an-page">
       <div className="an-topline">
         <div>
+          <span className="an-eyebrow">Learning intelligence</span>
           <h1 className="an-h1">Analytics</h1>
           <p className="an-h1-sub">Where learners excel and where they need more support</p>
         </div>
-        <div className="an-tabs">
-          {DIVISIONS.map(d => (
-            <button key={d} className={`an-tab${division === d ? ' active' : ''}`} onClick={() => setDivision(d)}>{d}</button>
-          ))}
+        <div className="an-filter">
+          <span className="an-filter-label">Division</span>
+          <div className="an-tabs">
+            {DIVISIONS.map(d => (
+              <button key={d} className={`an-tab${division === d ? ' active' : ''}`} onClick={() => setDivision(d)}>{d}</button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -138,23 +150,27 @@ export default function AdminAnalytics() {
       <div className="an-banner">
         <div className="an-banner-glow" />
         <div className="an-banner-text">
-          <h2>Great progress, {division} division <Sparkles size={18} /></h2>
-          <p>Post-test scores average <b>{avgPost}%</b> — up <b>+{improvement}%</b> from the pre-test across {data.length} sessions.</p>
-          <span className="an-banner-tag">{passRate}% of sessions passing</span>
+          <span className="an-banner-kicker">{divisionLabel} performance brief</span>
+          <h2>{performanceMessage} <Sparkles size={18} /></h2>
+          <p>Post-test scores average <b>{avgPost}%</b> — a <b>{signedImprovement}</b> change from the pre-test benchmark.</p>
+          <div className="an-banner-meta">
+            <span><b>{data.length}</b> sessions analyzed</span>
+            <span><b>{passCount}</b> meeting the 75% pass mark</span>
+          </div>
         </div>
         <svg className="an-banner-art" viewBox="0 0 200 130" aria-hidden="true">
+          <path className="an-art-grid" d="M22 20H190M22 50H190M22 80H190M22 110H190M46 12V116M86 12V116M126 12V116M166 12V116" />
           <rect x="96" y="74" width="16" height="34" rx="4" fill="rgba(255,255,255,0.18)" />
           <rect x="120" y="58" width="16" height="50" rx="4" fill="rgba(255,255,255,0.3)" />
           <rect x="144" y="42" width="16" height="66" rx="4" fill="#22e07b" />
           <rect x="168" y="64" width="16" height="44" rx="4" fill="rgba(255,255,255,0.18)" />
           <path d="M96 70 L128 54 L152 40 L184 30" fill="none" stroke="#22e07b" strokeWidth="2.5" strokeLinecap="round" />
-          <circle cx="184" cy="30" r="4" fill="#22e07b" />
         </svg>
       </div>
 
       {/* Stat tiles */}
       <div className="an-stats">
-        <div className="an-card an-tile">
+        <div className="an-card an-tile an-tile-green">
           <div className="an-tile-top">
             <div className="an-ic an-ic-green"><CheckCircle2 size={20} /></div>
             <span className="an-trend up"><ArrowUp size={12} /> +{improvement}%</span>
@@ -164,30 +180,30 @@ export default function AdminAnalytics() {
           <div className="an-tile-chart an-glow"><Sparkline values={data.map(d => d.post)} color={GREEN} /></div>
         </div>
 
-        <div className="an-card an-tile">
+        <div className="an-card an-tile an-tile-indigo">
           <div className="an-tile-top">
             <div className="an-ic an-ic-indigo"><ClipboardList size={20} /></div>
-            <Menu />
+            <span className="an-tile-context">Baseline</span>
           </div>
           <p className="an-tile-value">{avgPre}%</p>
           <p className="an-tile-label">Avg. Pre-Test</p>
           <div className="an-tile-chart"><Sparkline values={data.map(d => d.pre)} color="#8b93f8" /></div>
         </div>
 
-        <div className="an-card an-tile">
+        <div className="an-card an-tile an-tile-blue">
           <div className="an-tile-top">
             <div className="an-ic an-ic-blue"><TrendingUp size={20} /></div>
-            <Menu />
+            <span className="an-tile-context">Learning gain</span>
           </div>
-          <p className="an-tile-value">+{improvement}%</p>
+          <p className="an-tile-value">{signedImprovement}</p>
           <p className="an-tile-label">Avg. Improvement</p>
           <div className="an-tile-chart"><MiniBars values={data.map(d => d.post - d.pre)} color="#4d9bff" /></div>
         </div>
 
-        <div className="an-card an-tile">
+        <div className="an-card an-tile an-tile-amber">
           <div className="an-tile-top">
             <div className="an-ic an-ic-amber"><Target size={20} /></div>
-            <Menu />
+            <span className="an-tile-context">Target: 75%</span>
           </div>
           <p className="an-tile-value">{passRate}%</p>
           <p className="an-tile-label">Pass Rate</p>
@@ -197,32 +213,31 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Chart + gauge */}
-      <div className="an-row">
-        <div className="an-card">
+      <div className="an-row an-performance-row">
+        <div className="an-card an-comparison-card">
           <div className="an-card-hd">
             <div>
-              <h2 className="an-card-title">Pre-Test vs Post-Test</h2>
-              <p className="an-card-sub">Average score per session</p>
+              <h2 className="an-card-title">Assessment Score Comparison</h2>
+              <p className="an-card-sub">Pre-test and post-test averages by session</p>
             </div>
             <div className="an-legend">
               <span><i className="an-dot an-dot-pre" /> Pre</span>
               <span><i className="an-dot an-dot-post" /> Post</span>
             </div>
           </div>
-          <div className="an-card-body"><GroupedBars data={data} /></div>
+          <div className="an-card-body an-chart-body"><GroupedBars data={data} /></div>
         </div>
 
         <div className="an-card">
           <div className="an-card-hd">
             <div>
-              <h2 className="an-card-title">Performance</h2>
-              <p className="an-card-sub">{division} division</p>
+              <h2 className="an-card-title">Pass Benchmark</h2>
+              <p className="an-card-sub">{divisionLabel} · 75% required score</p>
             </div>
-            <Menu />
           </div>
           <div className="an-card-body an-gauge-body">
             <div className="an-glow"><TickGauge value={passRate} /></div>
-            <p className="an-gauge-caption">+{improvement}% average improvement</p>
+            <p className="an-gauge-caption">{signedImprovement} average improvement</p>
             <div className="an-gauge-breakdown">
               <div className="an-gb">
                 <div className="an-ic an-ic-indigo sm"><ClipboardList size={15} /></div>
@@ -241,13 +256,13 @@ export default function AdminAnalytics() {
       <div className="an-row">
         <div className="an-card">
           <div className="an-card-hd">
-            <div><h2 className="an-card-title">Mastery by Session</h2><p className="an-card-sub">Average post-test score</p></div>
+            <div><h2 className="an-card-title">Session Mastery</h2><p className="an-card-sub">Post-test result against the 75% benchmark</p></div>
           </div>
           <div className="an-card-body">
             <div className="an-bars">
               {data.map(d => (
                 <div key={d.id} className="an-bar-row">
-                  <span className="an-bar-label">S{d.session} · {d.title}</span>
+                  <span className="an-bar-label">{division === 'All' ? `${d.division} · ` : ''}S{d.session} · {d.title}</span>
                   <div className="an-bar-track"><div className={`an-bar-fill ${band(d.post)}`} style={{ width: `${d.post}%` }} /></div>
                   <span className="an-bar-val">{d.post}%</span>
                 </div>
@@ -263,7 +278,7 @@ export default function AdminAnalytics() {
 
         <div className="an-card">
           <div className="an-card-hd">
-            <div><h2 className="an-card-title">Key Insights</h2><p className="an-card-sub">Highlights</p></div>
+            <div><h2 className="an-card-title">Key Insights</h2><p className="an-card-sub">Priority findings for this division</p></div>
           </div>
           <div className="an-card-body an-insights">
             <div className="an-insight">
@@ -286,7 +301,6 @@ export default function AdminAnalytics() {
         </div>
       </div>
 
-      <p className="an-note"><CheckCircle2 size={13} /> Sample data — reflects real attempts once exams are stored in Supabase.</p>
     </div>
   )
 }

@@ -92,6 +92,20 @@
 .cv-dot { width: 7px; height: 7px; background: var(--st); border-radius: 50%; box-shadow: 0 0 0 3px color-mix(in srgb, var(--st) 18%, transparent); }
 .cv-session-open { color: #819087; transition: color .14s; }
 .cv-session-row:hover .cv-session-open { color: var(--st); }
+.cv-session-breakdown { margin: 5px 8px 12px; padding: 0 11px 10px; background: #f7f9f8; border: 1px solid #e2e9e4; border-radius: 0 0 8px 8px; }
+.cv-session-breakdown summary { display: flex; align-items: center; justify-content: space-between; padding-top: 9px; color: #596b60; font-size: 9.5px; font-weight: 750; cursor: pointer; list-style: none; }
+.cv-session-breakdown summary::-webkit-details-marker { display: none; }
+.cv-session-breakdown summary::after { content: '+'; color: #77877d; font-size: 15px; font-weight: 500; }
+.cv-session-breakdown[open] summary::after { content: '−'; }
+.cv-breakdown-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 16px; padding: 11px 0; }
+.cv-breakdown-item { display: grid; grid-template-columns: 7px minmax(75px, auto) minmax(0, 1fr); align-items: center; gap: 6px; color: #697970; font-size: 9px; }
+.cv-breakdown-item strong { overflow: hidden; color: #45584d; font-size: 9px; font-weight: 700; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.cv-breakdown-dot { width: 6px; height: 6px; background: #c3ccc6; border-radius: 50%; }
+.cv-breakdown-dot.done { background: #31835a; box-shadow: 0 0 0 2px #e1efe6; }
+.cv-remaining { padding: 9px 10px; background: #fff; border: 1px solid #e5ebe7; border-radius: 6px; }
+.cv-remaining > strong { color: #4d6054; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+.cv-remaining ul { display: grid; gap: 3px; padding-left: 14px; margin-top: 6px; color: #6e7d74; font-size: 9px; line-height: 1.4; }
+.cv-remaining p { margin-top: 5px; color: #31835a; font-size: 9px; }
 .cv-modal-empty { padding: 44px 20px; color: #7e8e84; text-align: center; }
 .cv-modal-empty svg { display: block; margin: 0 auto 11px; opacity: .4; }
 .cv-spin { animation: cv-rot .9s linear infinite; }
