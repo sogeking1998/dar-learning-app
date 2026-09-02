@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Plus, Pencil, Trash2, Check, X, BookOpen, ArrowLeft,
-  Settings, FileQuestion, ClipboardList, Film, FileDown,
+  Settings, FileQuestion, ClipboardList, Film, FileDown, ArrowRight,
 } from 'lucide-react'
 import { useCourses, addCourse, updateCourse, deleteCourse } from '../courseStore'
 import ConfirmModal from '../components/ConfirmModal'
@@ -51,6 +51,13 @@ function CourseForm({ initial, submitLabel, onCancel, onSaved }) {
 
   return (
     <div className="ax-editor">
+      <div className="crs-editor-head">
+        <span className="crs-editor-icon"><BookOpen size={19} /></span>
+        <div>
+          <h2>{f.id ? 'Session details' : 'Create a new session'}</h2>
+          <p>{f.id ? 'Update the information learners see for this session.' : 'Set the basic information before adding learning content.'}</p>
+        </div>
+      </div>
       <label className="ax-label">Session Title</label>
       <input className="adm-ann-input" value={f.title}
         onChange={e => set('title', e.target.value)}
@@ -125,7 +132,7 @@ export default function AdminCourses() {
   // ── Detail view: manage one session's content ──
   if (selected) {
     return (
-      <div className="ax-wrap">
+      <div className="ax-wrap crs-wrap crs-detail-view">
         <div className="crs-detail-hd">
           <button className="crs-back" onClick={backToList}><ArrowLeft size={16} /> All sessions</button>
           <div className="crs-detail-titles">
@@ -177,24 +184,41 @@ export default function AdminCourses() {
 
   // ── List view: sessions per division ──
   return (
-    <div className="ax-wrap">
-      <div className="admin-head">
-        <h1 className="admin-title">Session Management</h1>
-        <p className="admin-sub">Add or edit sessions, and manage each one's exam, tasks, video, and materials</p>
+    <div className="ax-wrap crs-wrap">
+      <div className="admin-head crs-page-head">
+        <div>
+          <span className="crs-page-kicker">Learning content administration</span>
+          <h1 className="admin-title">Session Management</h1>
+          <p className="admin-sub">Create sessions and manage their exams, tasks, videos, and learning materials.</p>
+        </div>
+        <div className="crs-page-summary" aria-label="Session summary">
+          <span><strong>{courses.length}</strong><small>Total sessions</small></span>
+          <span><strong>{DIVISIONS.length}</strong><small>Divisions</small></span>
+        </div>
       </div>
 
-      <div className="ax-tabs">
-        {DIVISIONS.map(d => (
-          <button key={d} className={`ax-tab${division === d ? ' active' : ''}`} onClick={() => setDivision(d)}>{d}</button>
-        ))}
+      <div className="crs-toolbar">
+        <div className="crs-filter-group">
+          <span className="crs-filter-label">Division view</span>
+          <div className="crs-division-tabs">
+            {DIVISIONS.map(d => {
+              const count = courses.filter(c => c.division === d).length
+              return (
+                <button key={d} className={`crs-division-tab${division === d ? ' active' : ''}`} onClick={() => setDivision(d)}>
+                  <span>{d}</span><small>{count}</small>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        {!adding && <button className="crs-add-btn" onClick={() => setAdding(true)}><Plus size={16} /> Add Session</button>}
       </div>
 
-      <div className="ax-list-hd">
-        <h2 className="ax-list-title">
-          {division} Sessions
-          <span className="ax-count">{divCourses.length} session{divCourses.length === 1 ? '' : 's'}</span>
-        </h2>
-        {!adding && <button className="ax-add-btn" onClick={() => setAdding(true)}><Plus size={15} /> Add Session</button>}
+      <div className="crs-list-head">
+        <div>
+          <h2>{division} Sessions <span>{divCourses.length}</span></h2>
+          <p>Sessions are displayed in their learner-facing order.</p>
+        </div>
       </div>
 
       {adding && (
@@ -211,19 +235,27 @@ export default function AdminCourses() {
       ) : divCourses.length === 0 && !adding ? (
         <div className="ax-empty"><BookOpen size={32} /><p>No sessions in this division yet. Click "Add Session".</p></div>
       ) : (
-        <ol className="ax-questions">
+        <ol className="crs-session-grid">
           {divCourses.map(c => (
-            <li key={c.id} className="ax-question crs-session-row">
+            <li key={c.id} className="crs-session-card">
               <button className="crs-session-open" onClick={() => openSession(c)}>
-                <span className="ax-q-num">{c.session}</span>
+                <span className="crs-session-number"><small>Session</small>{String(c.session).padStart(2, '0')}</span>
                 <span className="crs-session-info">
-                  <span className="ax-q-text">{c.title}</span>
-                  <span className="crs-meta">{c.code}{c.duration ? ` · ${c.duration}` : ''} · manage content →</span>
+                  <span className="crs-session-code">{c.code || `${c.division}-${c.session}`}</span>
+                  <span className="crs-session-title">{c.title}</span>
+                  <span className="crs-session-meta">{c.division} division{c.duration ? ` · ${c.duration}` : ''}</span>
+                  <span className="crs-content-map" aria-label="Manageable session content">
+                    <span><FileQuestion size={13} /> Exam</span>
+                    <span><ClipboardList size={13} /> Tasks</span>
+                    <span><Film size={13} /> Video</span>
+                    <span><FileDown size={13} /> Materials</span>
+                  </span>
+                  <span className="crs-open-label">Open session workspace <ArrowRight size={14} /></span>
                 </span>
               </button>
-              <div className="ax-q-actions">
-                <button onClick={() => openSession(c)} title="Edit / manage"><Pencil size={14} /></button>
-                <button onClick={() => setConfirmDel(c.id)} title="Delete" className="ax-q-del"><Trash2 size={14} /></button>
+              <div className="crs-card-actions">
+                <button onClick={() => openSession(c)} title="Edit session" aria-label={`Edit ${c.title}`}><Pencil size={15} /></button>
+                <button onClick={() => setConfirmDel(c.id)} title="Delete session" aria-label={`Delete ${c.title}`} className="crs-card-delete"><Trash2 size={15} /></button>
               </div>
             </li>
           ))}

@@ -30,13 +30,23 @@
   transition: transform 0.25s;
 }
 .nb-brand:hover .nb-logo { transform: translateY(-1px); }
-.nb-brand-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+.nb-brand-text { min-width: max-content; display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
 .nb-brand-title {
   font-size: 14.5px; font-weight: 800; letter-spacing: -0.2px;
   background: linear-gradient(90deg, #ffffff, #bbf7d0);
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: #fff;
 }
-.nb-brand-sub { font-size: 9.5px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--g400); opacity: 0.7; }
+.nb-brand-sub {
+  margin-top: 2px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.45px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--g400);
+  opacity: 0.78;
+}
 
 /* Desktop links */
 .nb-links { display: flex; align-items: center; gap: 3px; justify-self: center; }
@@ -207,12 +217,12 @@
 
 /* ═══════════════ Breakpoints ═══════════════ */
 /* Long labels + user chip get tight → collapse to hamburger below 1080px. */
-@media (max-width: 1080px) {
+@media (max-width: 1240px) {
   .nb-inner { display: flex; }
   .nb-links, .nb-right { display: none; }
   .nb-burger { display: flex; }
 }
-@media (min-width: 1081px) {
+@media (min-width: 1241px) {
   .nb-mobile, .nb-scrim { display: none !important; }
 }
 @media (max-width: 480px) {

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { X, PlayCircle, ClipboardList, FileText, GraduationCap, Check, ChevronRight } from 'lucide-react'
+import { X, PlayCircle, ClipboardList, FileText, GraduationCap, Check, ChevronRight, Building2, Briefcase, Mail } from 'lucide-react'
 import Avatar from './Avatar'
 import SessionOutputModal from './SessionOutputModal'
 import { useCourses } from '../courseStore'
@@ -46,97 +46,127 @@ export default function StudentProgressModal({ student, onClose }) {
     (r.videoPct === null || r.videoPct === 100) &&
     (r.taskTotal === 0 || r.taskPassed === r.taskTotal) &&
     r.preTaken && r.postPct !== null
+  const hasStarted = r =>
+    (r.videoPct !== null && r.videoPct > 0) ||
+    r.taskSubmitted > 0 || r.preTaken || r.postPct !== null
   const done = rows.filter(isDone).length
   const overall = rows.length ? Math.round((done / rows.length) * 100) : 0
 
   return (
     <div className="sp-overlay" onClick={onClose}>
       <div className="sp-modal" onClick={e => e.stopPropagation()}>
-        <header className="sp-head">
-          <div
-            className="sp-avatar-wrap"
-            style={{ background: `conic-gradient(#22c55e ${overall}%, #e4ebe6 0)` }}
-          >
-            <Avatar name={student.name} gender={student.gender} className="sp-avatar" />
-            <span className="sp-avatar-badge">{overall}%</span>
+        <header className="sp-record-head">
+          <div className="sp-profile">
+            <div className="sp-avatar-wrap">
+              <Avatar name={student.name} gender={student.gender} className="sp-avatar" />
+            </div>
+            <div className="sp-id">
+              <span className="sp-eyebrow"><GraduationCap size={12} /> Learner performance record</span>
+              <h3 className="sp-name">{student.name || '(no name)'}</h3>
+              <div className="sp-identity-details">
+                <span className="sp-identity-detail">
+                  <Building2 size={14} />
+                  <span><small>Division</small><strong>{student.division || '—'}</strong></span>
+                </span>
+                <span className="sp-identity-detail">
+                  <Briefcase size={14} />
+                  <span><small>Position</small><strong>{student.position || '—'}</strong></span>
+                </span>
+                {student.email && (
+                  <span className="sp-identity-detail email">
+                    <Mail size={14} />
+                    <span><small>Email address</small><strong title={student.email}>{student.email}</strong></span>
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="sp-id">
-            <h3 className="sp-name">{student.name || '(no name)'}</h3>
-            <span className="sp-meta">{student.division || '—'} · {student.position || '—'}</span>
+          <div className="sp-record-metrics">
+            <div><strong>{overall}%</strong><span>Overall progress</span></div>
+            <div><strong>{done}</strong><span>Completed</span></div>
+            <div><strong>{Math.max(rows.length - done, 0)}</strong><span>Remaining</span></div>
           </div>
           <button className="sp-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
         </header>
 
-        <div className="sp-summary">
-          <div className="sp-summary-icon"><GraduationCap size={18} /></div>
-          <div className="sp-summary-text">
-            <p className="sp-summary-lead"><strong>{done}</strong> of <strong>{rows.length}</strong> sessions completed</p>
-            <div className="sp-summary-bar"><span style={{ width: `${overall}%` }} /></div>
+        <div className="sp-progress-strip">
+          <div className="sp-progress-label">
+            <span><GraduationCap size={17} /></span>
+            <div><strong>Learning path completion</strong><small>{done} of {rows.length} sessions complete</small></div>
           </div>
-          <span className="sp-summary-pct">{overall}%</span>
+          <div className="sp-progress-track"><span style={{ width: `${overall}%` }} /></div>
+          <strong className="sp-progress-value">{overall}%</strong>
         </div>
 
         <div className="sp-body">
-          {prog.loading ? (
-            <p className="sp-loading">Loading progress…</p>
-          ) : (
-            <table className="sp-table">
-              <thead>
-                <tr>
-                  <th className="sp-col-session">Session</th>
-                  <th><span className="sp-th"><PlayCircle size={13} /> Video</span></th>
-                  <th><span className="sp-th"><ClipboardList size={13} /> Tasks</span></th>
-                  <th><span className="sp-th"><FileText size={13} /> Pre-Test</span></th>
-                  <th><span className="sp-th"><FileText size={13} /> Post-Test</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(r => (
-                  <tr key={r.id} className={`sp-row sp-row-${r.division.toLowerCase()}${isDone(r) ? ' sp-row-done' : ''}`}>
-                    <td className="sp-session">
-                      <span className={`sp-div sp-div-${r.division.toLowerCase()}`}>{r.division}</span>
-                      <span className="sp-title" title={r.title}>Session {r.session} — {r.title}</span>
-                    </td>
-                    <td>
-                      {r.videoPct === null ? <span className="sp-dash">—</span> : (
-                        <div className="sp-metric">
-                          <span className="sp-val">{r.videoPct}%</span>
-                          <span className="sp-bar"><span className="sp-fill sp-fill-v" style={{ width: `${r.videoPct}%` }} /></span>
+          <div className="sp-list-intro">
+            <div><h4>Session requirements</h4><p>Review each learning component and open submitted work or assessment results.</p></div>
+            <span>{rows.length} sessions</span>
+          </div>
+          {prog.loading ? <p className="sp-loading">Loading progress…</p> : (
+            <div className="sp-session-list">
+              {rows.map(r => {
+                const completed = isDone(r)
+                const started = hasStarted(r)
+                return (
+                  <article key={r.id} className={`sp-session-card sp-row-${r.division.toLowerCase()}${completed ? ' complete' : ''}`}>
+                    <div className="sp-course-block">
+                      <div className="sp-course-topline">
+                        <span className={`sp-div sp-div-${r.division.toLowerCase()}`}>{r.division}</span>
+                        <span className={`sp-course-status ${completed ? 'complete' : started ? 'active' : ''}`}>
+                          {completed ? 'Completed' : started ? 'In progress' : 'Not started'}
+                        </span>
+                      </div>
+                      <div className="sp-course-title">
+                        <span className="sp-session-num">S{r.session}</span>
+                        <h5 title={r.title}>{r.title}</h5>
+                      </div>
+                    </div>
+
+                    <div className="sp-requirements">
+                      <div className={`sp-req${r.videoPct === 100 ? ' complete' : ''}`}>
+                        <span className="sp-req-icon video"><PlayCircle size={17} /></span>
+                        <div className="sp-req-copy"><small>Video</small><strong>{r.videoPct === null ? 'No video' : `${r.videoPct}% watched`}</strong></div>
+                        {r.videoPct !== null && <span className="sp-req-meter"><i style={{ width: `${r.videoPct}%` }} /></span>}
+                      </div>
+
+                      {r.taskTotal === 0 ? (
+                        <div className="sp-req">
+                          <span className="sp-req-icon task"><ClipboardList size={17} /></span>
+                          <div className="sp-req-copy"><small>Tasks</small><strong>No task</strong></div>
                         </div>
-                      )}
-                    </td>
-                    <td>
-                      {r.taskTotal === 0 ? <span className="sp-dash">—</span> : (
-                        <button className="sp-cell-btn" onClick={() => setDetail({ course: courseById[r.id], kind: 'task' })} title="Review submissions">
-                          {r.taskPassed === r.taskTotal
-                            ? <span className="sp-chip sp-chip-done"><Check size={14} /> Passed</span>
-                            : r.taskSubmitted > 0
-                              ? <span className="sp-chip sp-chip-review">To review</span>
-                              : <span className="sp-chip sp-chip-pending">Pending</span>}
-                          <ChevronRight size={15} className="sp-caret" />
+                      ) : (
+                        <button className={`sp-req clickable${r.taskPassed === r.taskTotal ? ' complete' : ''}`} onClick={() => setDetail({ course: courseById[r.id], kind: 'task' })}>
+                          <span className="sp-req-icon task"><ClipboardList size={17} /></span>
+                          <div className="sp-req-copy"><small>Tasks</small><strong>{r.taskPassed === r.taskTotal ? 'Passed' : r.taskSubmitted > 0 ? 'Review needed' : 'Not submitted'}</strong></div>
+                          <ChevronRight size={16} />
                         </button>
                       )}
-                    </td>
-                    <td>
-                      {r.preTaken
-                        ? <button className="sp-cell-btn" onClick={() => setDetail({ course: courseById[r.id], kind: 'pre' })} title="View answers">
-                            <span className="sp-chip sp-chip-done"><Check size={14} /> Done</span>
-                            <ChevronRight size={15} className="sp-caret" />
-                          </button>
-                        : <span className="sp-dash">—</span>}
-                    </td>
-                    <td>
-                      {r.postPct === null
-                        ? <span className="sp-dash">—</span>
-                        : <button className="sp-cell-btn" onClick={() => setDetail({ course: courseById[r.id], kind: 'post' })} title="View answers">
-                            <span className={`sp-chip ${r.postPct >= 80 ? 'sp-chip-pass' : 'sp-chip-fail'}`}>{r.postPct}%</span>
-                            <ChevronRight size={15} className="sp-caret" />
-                          </button>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+                      {r.preTaken ? (
+                        <button className="sp-req clickable complete" onClick={() => setDetail({ course: courseById[r.id], kind: 'pre' })}>
+                          <span className="sp-req-icon pre"><FileText size={17} /></span>
+                          <div className="sp-req-copy"><small>Pre-Test</small><strong><Check size={13} /> Completed</strong></div>
+                          <ChevronRight size={16} />
+                        </button>
+                      ) : (
+                        <div className="sp-req"><span className="sp-req-icon pre"><FileText size={17} /></span><div className="sp-req-copy"><small>Pre-Test</small><strong>Not taken</strong></div></div>
+                      )}
+
+                      {r.postPct === null ? (
+                        <div className="sp-req"><span className="sp-req-icon post"><FileText size={17} /></span><div className="sp-req-copy"><small>Post-Test</small><strong>Not taken</strong></div></div>
+                      ) : (
+                        <button className={`sp-req clickable${r.postPct >= 80 ? ' complete' : ' attention'}`} onClick={() => setDetail({ course: courseById[r.id], kind: 'post' })}>
+                          <span className="sp-req-icon post"><FileText size={17} /></span>
+                          <div className="sp-req-copy"><small>Post-Test</small><strong>{r.postPct}% · {r.postPct >= 80 ? 'Passed' : 'Below target'}</strong></div>
+                          <ChevronRight size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
           )}
         </div>
       </div>

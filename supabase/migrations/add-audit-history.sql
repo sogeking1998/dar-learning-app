@@ -99,3 +99,6 @@ for each row execute function public.capture_admin_audit();
 drop trigger if exists audit_profiles on public.profiles;
 create trigger audit_profiles after insert or update or delete on public.profiles
 for each row execute function public.capture_admin_audit();
+
+-- Tell the Supabase REST API to recognize the new table immediately.
+notify pgrst, 'reload schema';
